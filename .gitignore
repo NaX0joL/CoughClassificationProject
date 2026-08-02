@@ -1,0 +1,11 @@
+# main ignore
+.venv/
+__pycache__/
+*.pyc
+outputs/
+data/
+tmp_trash/
+
+# additional
+AGENT.md
+CODING_PRINCIPLES.md
