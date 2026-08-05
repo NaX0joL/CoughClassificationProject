@@ -1,8 +1,9 @@
 from .source_reader import ElderlyCoughAudioSourceReader
-from .abstract import MetadataRecord
+from .abstract import RawMetadataRow, MetadataRow
 
 
 __all__ = [
     "ElderlyCoughAudioSourceReader",
-    "MetadataRecord",
+    "RawMetadataRow",
+    "MetadataRow",
 ]

@@ -5,7 +5,7 @@ from math import isnan
 from pathlib import Path
 from typing import Any, TypeVar, cast
 
-from .abstract import MetadataRecord
+from .abstract import RawMetadataRow, MetadataRow
 
 
 
@@ -16,12 +16,12 @@ Number = TypeVar("Number")
 class MetadataTypeCaster:
 
     @classmethod
-    def cast_records(cls, records:list[dict[str, object]]) -> list[MetadataRecord]:
-        type_casted = [cls.cast_record(record) for record in records]
+    def cast(cls, raw_rows:list[RawMetadataRow]) -> list[MetadataRow]:
+        type_casted = [cls._cast(row) for row in raw_rows]
         return type_casted
 
     @classmethod
-    def cast_record(cls, record:dict[str, object]) -> MetadataRecord:
+    def _cast(cls, raw_row:RawMetadataRow) -> MetadataRow:
         field_casters = {
             "PatientID": ("patient_id", _to_str),
             "facility": ("facility", _to_str),
@@ -43,12 +43,12 @@ class MetadataTypeCaster:
         typed_values = {}
         
         for source_column, (target_column, caster) in field_casters.items():
-            value = record.get(source_column)
+            value = raw_row.get(source_column)
             
-            if source_column in record:
+            if source_column in raw_row:
                 typed_values[target_column] = caster(value)
 
-        type_casted = MetadataRecord(**cast(dict[str, Any], typed_values))
+        type_casted = MetadataRow(**cast(dict[str, Any], typed_values))
         return type_casted
 
 
@@ -163,28 +163,23 @@ def _to_str_list(value:object) -> list[str] | None:
     if isinstance(value, str):
         try:
             value = ast.literal_eval(value)
-            
+
         except (SyntaxError, ValueError):
-            str_list = [
-                item.strip() 
-                for item in value.split(",") 
-                if item.strip()
-            ]
-            return str_list
-        
-    if isinstance(value, (list, tuple)):
-        str_list = []
-        for item in value:
-            str_value = _to_str(item)
+            value = value.split(",")
 
-            if str_value is None:
-                return None
+    if not isinstance(value, (list, tuple)):
+        return None
 
+    str_list = []
+    for item in value:
+        str_value = _to_str(item)
+        if str_value is not None:
             str_list.append(str_value)
 
-        return str_list
-    
-    return None
+    if not str_list:
+        return None
+
+    return str_list
 
 
 def _to_ranges(

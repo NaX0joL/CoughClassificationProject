@@ -4,8 +4,12 @@ from typing import Optional
 
 
 
+type RawMetadataRow = dict[str, object]
+
+
+
 @dataclass
-class MetadataRecord:
+class MetadataRow:
     patient_id: Optional[str] = None
     facility: Optional[str] = None
     normalized_facility: Optional[str] = None
