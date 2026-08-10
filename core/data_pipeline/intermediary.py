@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 
 import numpy as np
@@ -8,7 +7,7 @@ import numpy as np
 @dataclass
 class SourceSeries():
     value: np.ndarray
-    label: str
+    label: int
     metadata: dict[str, object]
 
 
@@ -16,5 +15,5 @@ class SourceSeries():
 @dataclass
 class Example():
     value: np.ndarray
-    label: str
+    label: int
     metadata: dict[str, object]

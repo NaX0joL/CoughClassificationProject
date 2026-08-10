@@ -25,8 +25,11 @@ AUDIO_FOLDER = "source_data"
 
 class ElderlyCoughAudioSourceReader(SourceReader):
 
-    def __init__(self, root_path:Path=ROOT_PATH) -> None:
+    def __init__(self,
+        root_path: Path = ROOT_PATH,
+    ) -> None:
         self.root_path = root_path
+        return
 
     def get_source_series(self) -> list[SourceSeries]:
         metadata_path = self.root_path / METADATA_FILENAME
@@ -41,10 +44,10 @@ class ElderlyCoughAudioSourceReader(SourceReader):
         raw_audio = RawAudioReader(
             directory=audio_directory
         ).read(translated_metadata)
-
+        
         source_series = SourceSeriesFactory.create(
-            translated_metadata,
-            raw_audio,
+            audios=raw_audio,
+            metadatas=translated_metadata,
         )
         return source_series
 
@@ -55,8 +58,8 @@ class SourceSeriesFactory:
     @classmethod
     def create(
         cls,
-        metadatas:list[MetadataRow],
-        audios:list[tuple[np.ndarray, int] | None]
+        audios: list[tuple[np.ndarray, int] | None],
+        metadatas: list[MetadataRow],
     ) -> list[SourceSeries]:
         source_series_list = []
 
@@ -110,10 +113,13 @@ class SourceSeriesFactory:
     @staticmethod
     def _assign_source_series_value(samples:np.ndarray) -> np.ndarray:
         return samples
-    
+
     @staticmethod
-    def _assign_source_series_label(metadata:MetadataRow):
-        return "infectious" if metadata.is_infectious else "non-infectious"
+    def _assign_source_series_label(metadata: MetadataRow) -> int:
+        return (
+            1 if metadata.is_infectious else
+            0
+        )
     
     @staticmethod
     def _assign_source_series_metadata(

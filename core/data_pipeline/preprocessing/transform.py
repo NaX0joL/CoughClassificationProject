@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torchaudio
 
+from ..abstract import Transformer
 from ..intermediary import Example
 
 
@@ -15,7 +16,7 @@ MFCC_COEFFICIENT_COUNT = 40
 
 
 
-class MFCC():
+class MFCC(Transformer):
 
     def __init__(self) -> None:
         self.transformer = torchaudio.transforms.MFCC(
