@@ -1,10 +1,10 @@
 
 from dataclasses import dataclass
 
-from .abstract import Padder, Segmenter, SourceReader, Transformer
+from .abstract import Padder, Segmenter, SourceReader, Splitter, Transformer
+from .data_pipeline_config import DataPipelineConfig
 from .dataset import ExampleDataset
 from .intermediary import DataSplit, Example
-from .stratifier import DataSplitter
 
 
 
@@ -14,7 +14,21 @@ class DataPipeline:
     segmenter: Segmenter
     transformer: Transformer
     padder: Padder
-    splitter: DataSplitter
+    splitter:Splitter
+
+    @classmethod
+    def create(
+        cls,
+        config:DataPipelineConfig,
+    ) -> "DataPipeline":
+        pipeline = cls(
+            source_reader=config.source_reader,
+            segmenter=config.segmenter,
+            transformer=config.transformer,
+            padder=config.padder,
+            splitter=config.splitter,
+        )
+        return pipeline
 
     def get_examples(self) -> list[Example]:
         source_series = self.source_reader.get_source_series()

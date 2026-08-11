@@ -1,52 +1,45 @@
 import torch
 from torch import Tensor, nn
 from torch.optim import Optimizer
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 
 from modules.resolve_pytorch_device import get_optimal_device
 
-from ..data_pipeline.intermediary import DataSplit
+from ..data_pipeline.dataset import ExampleDataset
 from ..model.full_model import FullModel
 from .training_config import TrainingConfig
-from .training_logic import train_model
+from .train_logic import LossLog, do_train_logic
 
 
 
-class Trainer():
+class Trainer:
     
-    def __init__(self, config:TrainingConfig, model:FullModel, data_split:DataSplit) -> None:
+    def __init__(
+        self,
+        config:TrainingConfig,
+        model:FullModel,
+        train_dataset:ExampleDataset,
+        validation_dataset:ExampleDataset,
+    ) -> None:
         self.config = config
         self.model = model
-        self.data_split = data_split
+        self.train_dataset = train_dataset
+        self.validation_dataset = validation_dataset
         
         self.device = get_optimal_device()
         return
     
-    def train_model(self) -> None:
-        # create fresh model
-        # train and compute metrics on each folds
-        # compute metrics on test split
-        # save all relevant data (
-        #   config.pkl
-        #   config.txt
-        #   loss.json               [per fold]
-        #   loss.png                [per fold]
-        #   confusion_matrix.png    [per fold and test]
-        #   metrics.json            [per fold and test]
-        #   train_outputs.pdf       [per fold]
-        #   validation_outputs.pdf  [per fold]
-        # )
-        return 
-    
-    def train_model(self, train_dataset:Dataset, validation_dataset:Dataset) -> None:
-        train_loader = self._dataset_to_dataloader(train_dataset, shuffle=True)
-        validation_loader = self._dataset_to_dataloader(validation_dataset, shuffle=False)
+    def fit(self) -> LossLog:
+        print(f"started training on device {self.device}")
+        
+        train_loader = self._dataset_to_dataloader(self.train_dataset, shuffle=True)
+        validation_loader = self._dataset_to_dataloader(self.validation_dataset, shuffle=False)
         
         self.model = self.model.to(self.device)
         criterion = build_criterion(self.config).to(self.device)
         optimizer = build_optimizer(self.config, self.model)
         
-        train_model(
+        loss_log = do_train_logic(
             epochs=self.config.num_epochs,
             model=self.model,
             criterion=criterion,
@@ -54,10 +47,13 @@ class Trainer():
             train_loader=train_loader,
             validation_loader=validation_loader,
         )
-        
-        return
+        return loss_log
     
-    def _dataset_to_dataloader(self, dataset:Dataset, shuffle:bool) -> DataLoader:
+    def _dataset_to_dataloader(
+        self,
+        dataset:ExampleDataset,
+        shuffle:bool,
+    ) -> DataLoader:
         return DataLoader(
             dataset=dataset,
             shuffle=shuffle,

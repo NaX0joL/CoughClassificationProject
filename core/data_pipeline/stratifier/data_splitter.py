@@ -1,16 +1,15 @@
 from dataclasses import dataclass
 
-from torch.utils.data import Dataset
-
+from ..abstract import Splitter
 from ..dataset import ExampleDataset
-from ..intermediary import DataSplit, Example
+from ..intermediary import DataSplit, DevelopmentFold, Example
 from .fold_stratifier import create_training_validation_folds
 from .test_splitter import split_development_and_test
 
 
 
 @dataclass
-class DataSplitter:
+class DataSplitter(Splitter):
     group_metadata_key:str
     test_ratio:float=0.2
     number_of_folds:int=5
@@ -30,7 +29,7 @@ class DataSplitter:
             random_seed=self.random_seed,
         )
         data_split = DataSplit(
-            test_set=ExampleDataset(test_examples),
+            test_dataset=ExampleDataset(test_examples),
             development_folds=self._to_dataset_folds(development_folds),
         )
         return data_split
@@ -38,14 +37,14 @@ class DataSplitter:
     def _to_dataset_folds(
         self,
         development_folds:list[dict[str, list[Example]]],
-    ) -> list[dict[str, Dataset]]:
-        dataset_folds = []
+    ) -> list[DevelopmentFold]:
+        dataset_folds:list[DevelopmentFold] = []
 
         for fold in development_folds:
-            dataset_fold = {
-                "train": ExampleDataset(fold["train"]),
-                "validation": ExampleDataset(fold["validation"]),
-            }
+            dataset_fold = DevelopmentFold(
+                train_dataset=ExampleDataset(fold["train"]),
+                validation_dataset=ExampleDataset(fold["validation"]),
+            )
             dataset_folds.append(dataset_fold)
             
         return dataset_folds

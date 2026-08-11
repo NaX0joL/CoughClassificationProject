@@ -1,0 +1,54 @@
+from collections.abc import Callable
+
+import numpy as np
+import torch
+from torch import Tensor
+from torch.utils.data import DataLoader
+
+from modules.resolve_pytorch_device import get_model_device
+
+from ..data_pipeline.dataset import ExampleDataset
+from ..model import FullModel
+from .classification_metrics import ClassificationMetrics
+
+
+
+def evaluate_model(
+    model:FullModel,
+    dataset:ExampleDataset,
+    calculate_metrics:Callable[[np.ndarray, np.ndarray, np.ndarray], ClassificationMetrics],
+    batch_size:int=32,
+) -> ClassificationMetrics:
+    
+    """Run a model on a dataset and calculate metrics for every example."""
+    
+    all_labels:list[np.ndarray] = []
+    all_predictions:list[np.ndarray] = []
+    all_probabilities:list[np.ndarray] = []
+    loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False)
+    device = get_model_device(model)
+    was_training = model.training
+    model.eval()
+
+    try:
+        with torch.inference_mode():
+            for batch in loader:
+                values:Tensor = batch["value"].to(device)
+                labels:Tensor = batch["label"]
+                probabilities = model.predict_probabilities(values)
+                predictions = probabilities.argmax(dim=1)
+
+                all_labels.append(labels.cpu().numpy())
+                all_predictions.append(predictions.cpu().numpy())
+                all_probabilities.append(probabilities.cpu().numpy())
+    finally:
+        model.train(was_training)
+
+    if not all_labels:
+        raise ValueError("dataset must contain at least one example")
+
+    return calculate_metrics(
+        np.concatenate(all_labels),
+        np.concatenate(all_predictions),
+        np.concatenate(all_probabilities),
+    )

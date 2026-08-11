@@ -82,3 +82,27 @@ EMPTY_DETECTED_COUGH_SEGMENTS_PATIENT_IDS = [
     "89",
     "9",
 ]
+
+
+# Patient IDs whose records have both infectious and non-infectious labels.
+# They cannot be used with patient-level grouped splitting.
+MIXED_LABEL_PATIENT_IDS = [
+    "158",
+    "017",
+    "160",
+    "016",
+    "11074",
+    "11043",
+    "11020",
+    "11086",
+    "11052",
+    "11037",
+    "11063",
+    "11071",
+    "11025",
+    "11031",
+    "3207",
+    "3206",
+    "11024",
+    "1106",
+]

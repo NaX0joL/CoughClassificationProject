@@ -1,6 +1,9 @@
+from copy import deepcopy
+
 from torch import Tensor, nn
 
 from .abstract import ModelArchitecture, ModelBehavior, StepResult
+from .model_config import ModelConfig
 
 
 
@@ -15,6 +18,14 @@ class FullModel(nn.Module):
         self.architecture = architecture
         self.behavior = behavior
         return
+
+    @classmethod
+    def create(cls, config:ModelConfig) -> "FullModel":
+        model = cls(
+            architecture=deepcopy(config.architecture),
+            behavior=deepcopy(config.behavior),
+        )
+        return model
 
     def forward(self, values:Tensor) -> Tensor:
         return self.architecture(values)

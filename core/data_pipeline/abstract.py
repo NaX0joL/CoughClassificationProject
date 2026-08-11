@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from .intermediary import Example, SourceSeries
+from .intermediary import DataSplit, Example, SourceSeries
 
 
 
@@ -30,3 +30,10 @@ class Padder(ABC):
     @abstractmethod
     def pad(self, examples: list[Example]) -> list[Example]:
         pass
+
+
+class Splitter(ABC):
+
+    @abstractmethod
+    def split(self, examples:list[Example]) -> DataSplit:
+        """Split processed examples into test and development datasets."""

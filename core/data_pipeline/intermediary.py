@@ -1,7 +1,13 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
-from torch.utils.data import Dataset
+
+
+if TYPE_CHECKING:
+    from .dataset import ExampleDataset
 
 
 @dataclass
@@ -18,7 +24,15 @@ class Example:
     metadata: dict[str, object]
 
 
+
+@dataclass
+class DevelopmentFold:
+    train_dataset:ExampleDataset
+    validation_dataset:ExampleDataset
+
+
+
 @dataclass
 class DataSplit:
-    test_set: Dataset
-    development_folds: list[dict[str, Dataset]]
+    test_dataset:ExampleDataset
+    development_folds:list[DevelopmentFold]

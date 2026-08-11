@@ -1,10 +1,10 @@
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, TypeAlias
 
 
 
-type RawMetadataRow = dict[str, object]
+RawMetadataRow: TypeAlias = dict[str, object]
 
 
 

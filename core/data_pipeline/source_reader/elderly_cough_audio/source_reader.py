@@ -11,6 +11,7 @@ from .audio_reader import RawAudioReader
 
 from .patient_id_exception import (
     EMPTY_DETECTED_COUGH_SEGMENTS_PATIENT_IDS,
+    MIXED_LABEL_PATIENT_IDS,
     MULTIPLE_MEDICAL_CONDITION_PATIENT_IDS,
 )
 
@@ -88,6 +89,8 @@ class SourceSeriesFactory:
         if metadata.patient_id in MULTIPLE_MEDICAL_CONDITION_PATIENT_IDS:
             return False
         if metadata.patient_id in EMPTY_DETECTED_COUGH_SEGMENTS_PATIENT_IDS:
+            return False
+        if metadata.patient_id in MIXED_LABEL_PATIENT_IDS:
             return False
         if not metadata.audio_exists:
             return False
