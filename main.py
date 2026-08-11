@@ -3,6 +3,7 @@ from dataclasses import asdict
 from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
 from core.data_pipeline.pipeline import DataPipeline
 from core.data_pipeline.preprocessing import CoughSegmenter, MFCC, ZeroPadder
+from core.data_pipeline.stratifier import DataSplitter
 
 from core.model.full_model import FullModel
 from core.model.architectures.MLP import MLP, MLPConfig
@@ -24,6 +25,9 @@ def main():
             target_length=820,
             padding_type="random",
             random_seed=42,
+        ),
+        splitter=DataSplitter(
+            group_metadata_key="patient_id",
         ),
     )
     dataset = pipeline.get_dataset()
