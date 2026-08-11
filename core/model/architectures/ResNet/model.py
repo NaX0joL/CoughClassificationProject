@@ -19,6 +19,10 @@ class ResNet(ModelArchitecture):
         if blocks_per_stage < 1:
             raise ValueError("blocks_per_stage must be at least 1")
 
+        self.block_channels = block_channels
+        self.blocks_per_stage = blocks_per_stage
+        self.output_dim = output_dim
+
         stages: list[nn.Module] = []
         current_channels = block_channels[0]
 

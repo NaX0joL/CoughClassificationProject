@@ -1,7 +1,13 @@
 import numpy as np
 import pytest
 
-from core.metrics import calculate_classification_metrics
+from core.metrics import (
+    AccuracyMetric,
+    ClassificationMetricsCalculator,
+    F1ScoreMetric,
+    MetricsConfig,
+    calculate_classification_metrics,
+)
 
 
 def test_calculate_classification_metrics_for_binary_classification() -> None:
@@ -71,3 +77,43 @@ def test_calculate_classification_metrics_requires_labels_for_missing_classes() 
 
     with pytest.raises(ValueError, match="class_labels is required"):
         calculate_classification_metrics(labels, predictions, probabilities)
+
+
+def test_metrics_calculator_calculates_only_selected_metric_instances() -> None:
+    labels = np.array([0, 0, 1, 1])
+    predictions = np.array([0, 1, 1, 1])
+    probabilities = np.array([
+        [0.9, 0.1],
+        [0.4, 0.6],
+        [0.2, 0.8],
+        [0.1, 0.9],
+    ])
+    calculator = ClassificationMetricsCalculator([
+        AccuracyMetric(),
+        F1ScoreMetric(),
+    ])
+
+    metrics = calculator.calculate(labels, predictions, probabilities)
+
+    assert metrics.to_dict() == {
+        "accuracy": pytest.approx(0.75),
+        "f1_score": pytest.approx(0.7333333333),
+    }
+    with pytest.raises(AttributeError, match="metric was not calculated"):
+        _ = metrics.roc_auc
+
+
+def test_metrics_config_default_contains_all_standard_metrics() -> None:
+    config = MetricsConfig.default()
+
+    assert [metric.name for metric in config.metrics] == [
+        "roc_auc",
+        "pr_auc",
+        "precision",
+        "recall",
+        "specificity",
+        "f1_score",
+        "accuracy",
+        "macro_accuracy",
+        "macro_f1_score",
+    ]

@@ -48,7 +48,7 @@ def main():
     # out = model(dataset[0]["value"])
     
     training_config = TrainingConfig(
-        num_epochs=3,
+        num_epochs=2,
         criterion_name="cross_entropy",
         optimizer_name="adamw",
         learning_rate=0.0001,
@@ -65,11 +65,10 @@ def main():
     )
     exp.train_model()
     
-    # print(dataset[0])
-    # print(out)
     return
 
 
 
 if __name__ == "__main__":
     main()
+    print("DONE!")

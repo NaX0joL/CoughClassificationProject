@@ -14,6 +14,9 @@ class LeNet(ModelArchitecture):
         output_dim:int,
     ) -> None:
         super().__init__()
+        self.conv_channels = conv_channels
+        self.linear_dims = linear_dims
+        self.output_dim = output_dim
         
         conv_layers = [
             nn.LazyConv1d(

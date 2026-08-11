@@ -13,6 +13,8 @@ class MLP(ModelArchitecture):
         output_dim:int,
     ) -> None:
         super().__init__()
+        self.linear_dims = linear_dims
+        self.output_dim = output_dim
         
         layers = [
             nn.Flatten(start_dim=1),
