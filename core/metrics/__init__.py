@@ -13,7 +13,7 @@ from .classification_metrics import (
     SpecificityMetric,
     calculate_classification_metrics,
 )
-from .evaluation import ModelEvaluator
+from .evaluation import ModelEvaluation, ModelEvaluator
 from .metrics_config import MetricsConfig
 
 
@@ -33,4 +33,5 @@ __all__ = [
     "MetricsConfig",
     "calculate_classification_metrics",
     "ModelEvaluator",
+    "ModelEvaluation",
 ]

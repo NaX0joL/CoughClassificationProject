@@ -2,7 +2,7 @@
 from typing import TypeGuard
 
 from ..abstract import Segmenter
-from ..intermediary import SourceSeries, Example
+from ..intermediary import ORIGINAL_LABEL_METADATA_KEY, SourceSeries, Example
 
 
 
@@ -26,6 +26,10 @@ class CoughSegmenter(Segmenter):
             key: source_series.metadata[key]
             for key in self.kept_metadata_key
         }
+        kept_metadata[ORIGINAL_LABEL_METADATA_KEY] = source_series.metadata.get(
+            ORIGINAL_LABEL_METADATA_KEY,
+            str(source_series.label),
+        )
         examples = []
         
         cough_intervals = source_series.metadata.get("detected_cough_segments")

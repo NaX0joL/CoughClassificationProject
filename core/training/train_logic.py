@@ -111,7 +111,7 @@ def _epoch_logic(
     return mean_loss
 
 
-def _move_batch_to_device(batch:dict[str, Tensor], device:torch.device) -> dict[str, Tensor]:
+def _move_batch_to_device(batch:dict[str, object], device:torch.device) -> dict[str, Tensor]:
     return {
         key: value.to(device)
         for key, value in batch.items()

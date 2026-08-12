@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from ..training import LossLog
+from ...training import LossLog
 
 
 def save_fold_json(

@@ -2,7 +2,7 @@ import torch
 from torch import Tensor
 from torch.utils.data import Dataset
 
-from .intermediary import Example
+from .intermediary import ORIGINAL_LABEL_METADATA_KEY, Example
 
 
 class ExampleDataset(Dataset):
@@ -14,8 +14,16 @@ class ExampleDataset(Dataset):
     def __len__(self) -> int:
         return len(self.examples)
     
-    def __getitem__(self, index:int) -> dict[str, Tensor]:
+    def __getitem__(self, index:int) -> dict[str, Tensor|dict[str, str]]:
         example = self.examples[index]
+        original_label = example.metadata.get(ORIGINAL_LABEL_METADATA_KEY)
+        metadata = {
+            ORIGINAL_LABEL_METADATA_KEY: (
+                str(original_label)
+                if original_label is not None
+                else str(example.label)
+            ),
+        }
         
         return {
             "value": torch.tensor(
@@ -26,4 +34,5 @@ class ExampleDataset(Dataset):
                 example.label,
                 dtype=torch.long,
             ),
+            "metadata": metadata,
         }

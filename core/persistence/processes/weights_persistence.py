@@ -2,7 +2,7 @@ from pathlib import Path
 
 import torch
 
-from ..model import FullModel
+from ...model import FullModel
 
 
 def save_fold_weights(weights_directory:Path, fold_index:int, model:FullModel) -> None:

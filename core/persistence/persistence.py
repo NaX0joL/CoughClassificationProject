@@ -2,12 +2,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from ..model import FullModel
+from ..data_pipeline.dataset import ExampleDataset
 from ..training import LossLog
-from .configuration_persistence import save_configuration
-from .figures_persistence import save_fold_figures
-from .json_persistence import save_fold_json
-from .weights_persistence import save_fold_weights
+from .persistence_config import PersistenceConfig
+from .processes.configuration_persistence import save_configuration
+from .processes.figures_persistence import save_fold_figures
+from .processes.json_persistence import save_fold_json
+from .processes.weights_persistence import save_fold_weights
 
 
 DEFAULT_OUTPUT_DIRECTORY = Path("outputs/mpkg")
@@ -17,8 +21,13 @@ DEFAULT_OUTPUT_DIRECTORY = Path("outputs/mpkg")
 class ExperimentPersistence:
     """Coordinate persistence for the artifacts of one experiment-training call."""
 
-    def __init__(self, run_directory:Path) -> None:
+    def __init__(
+        self,
+        run_directory:Path,
+        config:PersistenceConfig,
+    ) -> None:
         self.run_directory = run_directory
+        self.config = config
         self.figures_directory = run_directory / "figures"
         self.json_directory = run_directory / "json"
         self.weights_directory = run_directory / "weights"
@@ -28,10 +37,11 @@ class ExperimentPersistence:
     def create(
         cls,
         config:dict[str, Any],
+        persistence_config:PersistenceConfig,
         output_directory:Path=DEFAULT_OUTPUT_DIRECTORY,
     ) -> "ExperimentPersistence":
         run_directory = _create_run_directory(output_directory)
-        persistence = cls(run_directory)
+        persistence = cls(run_directory, persistence_config)
         persistence._create_directory_layout()
         save_configuration(run_directory, config)
         return persistence
@@ -42,12 +52,23 @@ class ExperimentPersistence:
         model:FullModel,
         loss_log:LossLog,
         validation_metrics:dict[str, float],
+        labels:np.ndarray,
+        predictions:np.ndarray,
+        class_names:dict[int, str],
+        train_dataset:ExampleDataset,
+        validation_dataset:ExampleDataset,
     ) -> None:
         save_fold_figures(
             self.figures_directory,
             fold_index,
             loss_log,
-            validation_metrics,
+            labels,
+            predictions,
+            class_names,
+            model,
+            train_dataset,
+            validation_dataset,
+            self.config,
         )
         save_fold_json(
             self.json_directory,

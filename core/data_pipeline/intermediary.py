@@ -10,6 +10,9 @@ if TYPE_CHECKING:
     from .dataset import ExampleDataset
 
 
+ORIGINAL_LABEL_METADATA_KEY = "original_label"
+
+
 @dataclass
 class SourceSeries:
     value: np.ndarray

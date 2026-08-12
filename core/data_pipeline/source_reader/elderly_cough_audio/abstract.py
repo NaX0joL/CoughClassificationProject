@@ -21,6 +21,7 @@ class MetadataRow:
     audio_exists: Optional[bool] = None
     current_medical_condition: Optional[list[str]] = None
     is_infectious: Optional[bool] = None
+    original_label: Optional[str] = None
     current_symptoms: Optional[list[str]] = None
     usability: Optional[bool] = None
     local_path: Optional[Path] = None

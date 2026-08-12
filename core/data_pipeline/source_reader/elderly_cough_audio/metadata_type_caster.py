@@ -48,6 +48,9 @@ class MetadataTypeCaster:
             if source_column in raw_row:
                 typed_values[target_column] = caster(value)
 
+                if source_column == "isInfectious":
+                    typed_values["original_label"] = _to_str(value)
+
         type_casted = MetadataRow(**cast(dict[str, Any], typed_values))
         return type_casted
 
