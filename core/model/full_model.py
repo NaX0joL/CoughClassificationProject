@@ -27,6 +27,16 @@ class FullModel(nn.Module):
         )
         return model
 
+    @classmethod
+    def create_from_state_dict(
+        cls,
+        config:ModelConfig,
+        state_dict:dict[str, Tensor],
+    ) -> "FullModel":
+        model = cls.create(config)
+        model.load_state_dict(state_dict)
+        return model
+
     def forward(self, values:Tensor) -> Tensor:
         return self.architecture(values)
 

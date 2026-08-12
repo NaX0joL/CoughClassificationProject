@@ -18,6 +18,20 @@ def save_configuration(run_directory:Path, config:dict[str, Any]) -> None:
     return
 
 
+def load_configuration(run_directory:Path) -> dict[str, Any]:
+    config_path = run_directory / "config.pkl"
+    if not config_path.is_file():
+        raise FileNotFoundError(f"mpkg configuration does not exist: {config_path}")
+
+    with config_path.open("rb") as config_file:
+        config = pickle.load(config_file)
+
+    if not isinstance(config, dict):
+        raise ValueError("mpkg configuration must be a dictionary")
+
+    return config
+
+
 def _format_configuration(config:dict[str, Any]) -> str:
     return "\n\n".join(
         f"{name} = {_format_value(value, indentation=0)}"

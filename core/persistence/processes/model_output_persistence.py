@@ -2,18 +2,16 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import TwoSlopeNorm
 
-from modules.resolve_pytorch_device import get_model_device
-
 from ...data_pipeline.dataset import ExampleDataset
+from ...gallery import ModelOutput, create_model_output
 from ...model import FullModel
 from ..persistence_config import PersistenceConfig
 
 
-MFCC_COLORMAP = "RdBu_r"
+MFCC_COLORMAP = "magma"
 
 
 def save_model_output_pdfs(
@@ -37,6 +35,8 @@ def save_model_output_pdfs(
         class_names,
         color_limit,
         config.number_of_train_model_outputs,
+        config.include_grad_cam,
+        config.include_legrad,
     )
     _save_dataset_output_pdf(
         figures_directory / "output_validation" / f"fold_{fold_index}-validation.pdf",
@@ -45,6 +45,8 @@ def save_model_output_pdfs(
         class_names,
         color_limit,
         config.number_of_validation_model_outputs,
+        config.include_grad_cam,
+        config.include_legrad,
     )
     return
 
@@ -72,9 +74,19 @@ def _save_dataset_output_pdf(
     class_names:dict[int, str],
     color_limit:float,
     number_of_outputs:int,
+    include_grad_cam:bool,
+    include_legrad:bool,
 ) -> None:
     sample_indices = _select_sample_indices(len(dataset), number_of_outputs)
-    outputs = _predict_samples(model, dataset, sample_indices)
+    outputs = [
+        create_model_output(
+            model,
+            dataset.examples[sample_index],
+            include_grad_cam=include_grad_cam,
+            include_legrad=include_legrad,
+        )
+        for sample_index in sample_indices
+    ]
     color_normalization = TwoSlopeNorm(
         vmin=-color_limit,
         vcenter=0,
@@ -82,10 +94,11 @@ def _save_dataset_output_pdf(
     )
 
     with PdfPages(path) as pdf:
-        for output in outputs:
+        for sample_index, output in zip(sample_indices, outputs):
             _save_output_page(
                 pdf,
                 dataset,
+                sample_index,
                 output,
                 class_names,
                 color_normalization,
@@ -103,42 +116,29 @@ def _select_sample_indices(dataset_size:int, number_of_outputs:int) -> list[int]
     return np.linspace(0, dataset_size - 1, sample_count, dtype=int).tolist()
 
 
-def _predict_samples(
-    model:FullModel,
-    dataset:ExampleDataset,
-    sample_indices:list[int],
-) -> list[tuple[int, int, float]]:
-    device = get_model_device(model)
-    was_training = model.training
-    model.eval()
-    outputs:list[tuple[int, int, float]] = []
-
-    try:
-        with torch.inference_mode():
-            for sample_index in sample_indices:
-                example = dataset.examples[sample_index]
-                values = torch.as_tensor(example.value, dtype=torch.float32).unsqueeze(0)
-                probabilities = model.predict_probabilities(values.to(device))[0].cpu()
-                prediction = int(probabilities.argmax().item())
-                confidence = float(probabilities[prediction].item())
-                outputs.append((sample_index, prediction, confidence))
-    finally:
-        model.train(was_training)
-
-    return outputs
-
-
 def _save_output_page(
     pdf:PdfPages,
     dataset:ExampleDataset,
-    output:tuple[int, int, float],
+    sample_index:int,
+    output:ModelOutput,
     class_names:dict[int, str],
     color_normalization:TwoSlopeNorm,
 ) -> None:
-    sample_index, prediction, confidence = output
     example = dataset.examples[sample_index]
-    figure, axis = plt.subplots(figsize=(11.69, 8.27), layout="constrained")
-    image = axis.imshow(
+    attribution_count = sum(
+        attribution is not None
+        for attribution in (output.grad_cam, output.legrad)
+    )
+    figure, axes = plt.subplots(
+        nrows=1 + attribution_count,
+        figsize=(11.69, 8.27),
+        layout="constrained",
+        squeeze=False,
+        sharex=True,
+        gridspec_kw={"height_ratios": [3] + [1] * attribution_count} if attribution_count else None,
+    )
+    mfcc_axis = axes[0, 0]
+    image = mfcc_axis.imshow(
         example.value.T,
         aspect="auto",
         origin="lower",
@@ -146,16 +146,34 @@ def _save_output_page(
         norm=color_normalization,
     )
     true_label = class_names.get(example.label, str(example.label))
-    predicted_label = class_names.get(prediction, str(prediction))
-    axis.set(xlabel="Frame", ylabel="MFCC coefficient")
-    axis.text(
-        0.5,
-        -0.12,
-        f"True: {true_label} | Predicted: {predicted_label} ({confidence:.3f})",
-        ha="center",
-        transform=axis.transAxes,
+    predicted_label = class_names.get(output.prediction, str(output.prediction))
+    title_color = "forestgreen" if output.prediction == example.label else "crimson"
+    mfcc_axis.set(ylabel="MFCC coefficient")
+    mfcc_axis.tick_params(axis="x", bottom=False, labelbottom=False)
+    if attribution_count == 0:
+        mfcc_axis.set(xlabel="Frame")
+        mfcc_axis.tick_params(axis="x", bottom=True, labelbottom=True)
+    figure.suptitle(
+        f"True: {true_label} | Predicted: {predicted_label} ({output.confidence:.3f})",
+        color=title_color,
+        fontsize=24,
     )
-    figure.colorbar(image, ax=axis, label="MFCC value")
+    figure.colorbar(image, ax=mfcc_axis, label="MFCC value")
+
+    attribution_index = 1
+    for attribution, label, color in (
+        (output.grad_cam, "Grad-Cam", "crimson"),
+        (output.legrad, "LeGrad", "darkorange"),
+    ):
+        if attribution is None:
+            continue
+        attribution_axis = axes[attribution_index, 0]
+        frames = np.arange(attribution.size)
+        attribution_axis.plot(frames, attribution, color=color, linewidth=1.5)
+        attribution_axis.fill_between(frames, attribution, color=color, alpha=0.25)
+        attribution_axis.set(xlabel="Frame", ylabel=label, ylim=(0, 1))
+        attribution_axis.grid(axis="y", alpha=0.25)
+        attribution_index += 1
     pdf.savefig(figure)
     plt.close(figure)
     return

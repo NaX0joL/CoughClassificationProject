@@ -21,6 +21,9 @@ class TrainingConfig:
     batch_size: int
     num_workers: int
     drop_last: bool
+    random_seed: int|None = None
+    
+    load_best_model: bool = True
     
     @classmethod
     def default(cls) -> "TrainingConfig":
@@ -36,5 +39,8 @@ class TrainingConfig:
             batch_size = 32,
             num_workers = 1,
             drop_last = False,
+            random_seed = 42,
+            
+            load_best_model = True,
         )
         return training_config

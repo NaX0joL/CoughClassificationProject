@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from modules.resolve_pytorch_device import get_model_device
 
 from ..model.full_model import FullModel
+from .checkpoint import BestModelCheckpoint
 from .train_display import TrainDisplay
 
 
@@ -21,6 +22,8 @@ EPOCH_TYPE: TypeAlias = Literal["train", "validation"]
 class LossLog:
     training_losses:list[float]
     validation_losses:list[float]
+    best_validation_loss:float|None = None
+    best_epoch:int|None = None
 
 
 
@@ -31,6 +34,8 @@ def do_train_logic(
     optimizer: Optimizer,
     train_loader: DataLoader,
     validation_loader: DataLoader,
+    checkpoint:BestModelCheckpoint|None=None,
+    load_best_model:bool=True,
 ) -> LossLog:
     loss_log = LossLog(
         training_losses=[],
@@ -39,7 +44,7 @@ def do_train_logic(
     train_display = TrainDisplay(number_of_epochs=epochs)
 
     try:
-        for _ in range(epochs):
+        for epoch in range(1, epochs + 1):
             training_loss = _epoch_logic(
                 epoch_type="train",
                 model=model,
@@ -57,11 +62,20 @@ def do_train_logic(
 
             loss_log.training_losses.append(training_loss)
             loss_log.validation_losses.append(validation_loss)
+
+            if checkpoint is not None:
+                checkpoint.update(model, validation_loss, epoch)
             
             train_display.update(training_loss, validation_loss)
 
     finally:
         train_display.close()
+
+    if checkpoint is not None:
+        if load_best_model:
+            checkpoint.load_best_model(model)
+        loss_log.best_validation_loss = checkpoint.best_validation_loss
+        loss_log.best_epoch = checkpoint.best_epoch
 
     return loss_log
 
@@ -96,6 +110,7 @@ def _epoch_logic(
 
             batch = _move_batch_to_device(batch, device=get_model_device(model))
             step_result = step_function(batch, criterion)
+            
             batch_size = batch["label"].numel()
             total_loss += step_result.loss.item() * batch_size
             total_examples += batch_size

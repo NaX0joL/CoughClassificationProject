@@ -1,10 +1,23 @@
-import numpy as np
+from dataclasses import dataclass
+from pathlib import Path
 
-from .data_pipeline import DataPipeline, DataPipelineConfig, DevelopmentFold
-from .model import FullModel, ModelConfig
-from .training import LossLog, Trainer, TrainingConfig
-from .metrics import MetricsConfig, ModelEvaluator
-from .persistence import ExperimentPersistence, PersistenceConfig
+from modules.resolve_pytorch_device import get_optimal_device
+
+from .data_pipeline import DataPipeline, DevelopmentFold
+from .experiment_config import ExperimentConfig
+from .model import FullModel
+from .training import LossLog, Trainer
+from .training.randomness import set_random_seed
+from .metrics import ModelEvaluator
+from .persistence import ExperimentPersistence
+
+
+@dataclass
+class PersistedFold:
+    fold_index:int
+    model:FullModel
+    loss_log:LossLog
+    validation_metrics:dict[str, float]
 
 
 
@@ -12,43 +25,83 @@ class ExperimentOrchestrator:
 
     def __init__(
         self,
-        data_pipeline_config: DataPipelineConfig,
-        model_config:ModelConfig,
-        training_config:TrainingConfig,
-        metrics_config:MetricsConfig|None=None,
-        persistence_config:PersistenceConfig|None=None,
+        config:ExperimentConfig,
+        experiment_id:str = "",
     ) -> None:
-        self.data_pipeline_config = data_pipeline_config
-        self.model_config = model_config
-        self.training_config = training_config
-
-        self.persistence_config = persistence_config or PersistenceConfig.default()
-        self.metrics_config = metrics_config or MetricsConfig.default()
+        self.config = config
+        self.experiment_id = experiment_id
+        
+        self.run_directory:Path|None = None
+        self.persisted_folds:list[PersistedFold] = []
+        self.cross_validation_summary:dict[str, object]|None = None
+        
+        self.device = get_optimal_device()
         return
 
+    @classmethod
+    def load(cls, mpkg_path:Path) -> "ExperimentOrchestrator":
+        persisted_experiment = ExperimentPersistence.load(mpkg_path)
+        experiment_config = ExperimentConfig.from_persisted_config(
+            persisted_experiment.config,
+        )
+        
+        experiment = cls(
+            experiment_config,
+            experiment_id=persisted_experiment.run_directory.name,
+        )
+        
+        experiment.run_directory = persisted_experiment.run_directory
+        experiment.persisted_folds = [
+            PersistedFold(
+                fold_index=fold.fold_index,
+                model=FullModel.create_from_state_dict(
+                    experiment_config.model_config,
+                    fold.state_dict,
+                ),
+                loss_log=fold.loss_log,
+                validation_metrics=fold.validation_metrics,
+            )
+            for fold in persisted_experiment.folds
+        ]
+        experiment.cross_validation_summary = (
+            persisted_experiment.cross_validation_summary
+        )
+        
+        return experiment
+
+    def test_model(self) -> None:
+        return
+    
     def train_model(self) -> None:
+        print(f"using device {self.device}")
+        random_seed = self.config.training_config.random_seed
+        if random_seed is not None:
+            set_random_seed(random_seed)
+        
         persistence = ExperimentPersistence.create(
             config={
-                "data_pipeline": self.data_pipeline_config,
-                "model": self.model_config,
-                "training": self.training_config,
-                "metrics": self.metrics_config,
-                "persistence": self.persistence_config,
+                "data_pipeline": self.config.data_pipeline_config,
+                "model": self.config.model_config,
+                "training": self.config.training_config,
+                "metrics": self.config.metrics_config,
+                "persistence": self.config.persistence_config,
             },
-            persistence_config=self.persistence_config,
+            persistence_config=self.config.persistence_config,
+            experiment_id=self.experiment_id,
         )
+        self.run_directory = persistence.run_directory
 
-        data_pipeline = DataPipeline.create(self.data_pipeline_config)
+        data_pipeline = DataPipeline.create(self.config.data_pipeline_config)
         data_split = data_pipeline.get_data_split()
 
-        model_evaluator = ModelEvaluator(self.metrics_config)
+        model_evaluator = ModelEvaluator(self.config.metrics_config)
 
         loss_logs = []
         folds_metrics = []
 
         for fold_index, development_fold in enumerate(data_split.development_folds, start=1):
 
-            model = FullModel.create(self.model_config)
+            model = FullModel.create(self.config.model_config).to(self.device)
             loss_log = self._train_development_fold(model, development_fold)
             
             evaluation = model_evaluator.evaluate(
@@ -70,7 +123,8 @@ class ExperimentOrchestrator:
                 train_dataset=development_fold.train_dataset,
                 validation_dataset=development_fold.validation_dataset,
             )
-        
+
+        persistence.save_cross_validation_summary(folds_metrics)
         return
 
     def _train_development_fold(
@@ -79,7 +133,7 @@ class ExperimentOrchestrator:
         development_fold:DevelopmentFold,
     ) -> LossLog:
         trainer = Trainer(
-            config=self.training_config,
+            config=self.config.training_config,
             model=model,
             train_dataset=development_fold.train_dataset,
             validation_dataset=development_fold.validation_dataset,

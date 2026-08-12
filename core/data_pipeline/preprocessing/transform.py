@@ -52,3 +52,39 @@ class MFCC(Transformer):
         waveform = torch.as_tensor(value, dtype=torch.float32)
         coefficients = self.transformer(waveform)
         return coefficients.transpose(0, 1).numpy()
+
+
+class MelBand(Transformer):
+    """Convert waveforms to log-mel band energies with the MFCC front-end settings."""
+
+    def __init__(self) -> None:
+        self.transformer = torchaudio.transforms.MelSpectrogram(
+            sample_rate=SAMPLE_RATE,
+            n_fft=FRAME_LENGTH,
+            win_length=FRAME_LENGTH,
+            hop_length=FRAME_STEP,
+            n_mels=MEL_FILTER_COUNT,
+        )
+        self.to_decibels = torchaudio.transforms.AmplitudeToDB(stype="power")
+        return
+
+    def transform(self, examples:list[Example]) -> list[Example]:
+        transformed_examples = []
+
+        for example in examples:
+            transformed_example = Example(
+                value=self._transform_value(example.value),
+                label=example.label,
+                metadata=example.metadata,
+            )
+            transformed_examples.append(transformed_example)
+
+        return transformed_examples
+
+    def _transform_value(self, value:np.ndarray) -> np.ndarray:
+        if value.size == 0:
+            raise ValueError("MelBand requires at least one audio sample")
+
+        waveform = torch.as_tensor(value, dtype=torch.float32)
+        mel_bands = self.transformer(waveform)
+        return self.to_decibels(mel_bands).transpose(0, 1).numpy()
