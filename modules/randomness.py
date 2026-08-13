@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 
-def set_random_seed(seed:int) -> None:
+def set_random_seed(seed: int) -> None:
     """Seed Python, NumPy, and PyTorch for reproducible training runs."""
     random.seed(seed)
     np.random.seed(seed)

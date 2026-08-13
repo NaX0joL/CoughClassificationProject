@@ -9,7 +9,13 @@ melband_data_pipeline_config = DataPipelineConfig(
     segmenter=CoughSegmenter(
         kept_metadata_key=["patient_id", "cough_audio"],
     ),
-    transformer=MelBand(),
+    transformer=MelBand(
+        sample_rate=16_000,
+        n_fft=400,
+        win_length=400,
+        hop_length=160,
+        n_mels=40,
+    ),
     padder=ZeroPadder(
         target_length=820,
         padding_type="random",

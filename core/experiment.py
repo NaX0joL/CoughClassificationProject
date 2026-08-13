@@ -2,14 +2,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from modules.resolve_pytorch_device import get_optimal_device
+from modules.randomness import set_random_seed
 
 from .data_pipeline import DataPipeline, DevelopmentFold
 from .experiment_config import ExperimentConfig
 from .model import FullModel
 from .training import LossLog, Trainer
-from .training.randomness import set_random_seed
 from .metrics import ModelEvaluator
 from .persistence import ExperimentPersistence
+
 
 
 @dataclass
@@ -73,7 +74,9 @@ class ExperimentOrchestrator:
         return
     
     def train_model(self) -> None:
+        print(f"begin training {self.experiment_id}")
         print(f"using device {self.device}")
+        
         random_seed = self.config.training_config.random_seed
         if random_seed is not None:
             set_random_seed(random_seed)

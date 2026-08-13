@@ -11,7 +11,7 @@ from ...model import FullModel
 from ..persistence_config import PersistenceConfig
 
 
-MFCC_COLORMAP = "magma"
+FEATURE_COLORMAP = "magma"
 
 
 def save_model_output_pdfs(
@@ -26,7 +26,7 @@ def save_model_output_pdfs(
     color_limit = _get_color_limit(
         train_dataset,
         validation_dataset,
-        config.mfcc_color_percentile,
+        config.feature_color_percentile,
     )
     _save_dataset_output_pdf(
         figures_directory / "output_train" / f"fold_{fold_index}-train.pdf",
@@ -37,6 +37,9 @@ def save_model_output_pdfs(
         config.number_of_train_model_outputs,
         config.include_grad_cam,
         config.include_legrad,
+        config.x_axis_label,
+        config.y_axis_label,
+        config.colorbar_label,
     )
     _save_dataset_output_pdf(
         figures_directory / "output_validation" / f"fold_{fold_index}-validation.pdf",
@@ -47,6 +50,9 @@ def save_model_output_pdfs(
         config.number_of_validation_model_outputs,
         config.include_grad_cam,
         config.include_legrad,
+        config.x_axis_label,
+        config.y_axis_label,
+        config.colorbar_label,
     )
     return
 
@@ -56,9 +62,6 @@ def _get_color_limit(
     validation_dataset:ExampleDataset,
     percentile:float,
 ) -> float:
-    if not 0 < percentile <= 100:
-        raise ValueError("mfcc_color_percentile must be in the range (0, 100]")
-
     values = np.concatenate([
         example.value.ravel()
         for example in train_dataset.examples + validation_dataset.examples
@@ -76,6 +79,9 @@ def _save_dataset_output_pdf(
     number_of_outputs:int,
     include_grad_cam:bool,
     include_legrad:bool,
+    x_axis_label:str,
+    y_axis_label:str,
+    colorbar_label:str,
 ) -> None:
     sample_indices = _select_sample_indices(len(dataset), number_of_outputs)
     outputs = [
@@ -102,6 +108,9 @@ def _save_dataset_output_pdf(
                 output,
                 class_names,
                 color_normalization,
+                x_axis_label,
+                y_axis_label,
+                colorbar_label,
             )
     return
 
@@ -123,6 +132,9 @@ def _save_output_page(
     output:ModelOutput,
     class_names:dict[int, str],
     color_normalization:TwoSlopeNorm,
+    x_axis_label:str,
+    y_axis_label:str,
+    colorbar_label:str,
 ) -> None:
     example = dataset.examples[sample_index]
     attribution_count = sum(
@@ -137,29 +149,28 @@ def _save_output_page(
         sharex=True,
         gridspec_kw={"height_ratios": [3] + [1] * attribution_count} if attribution_count else None,
     )
-    mfcc_axis = axes[0, 0]
-    image = mfcc_axis.imshow(
-        example.value.T,
-        aspect="auto",
-        origin="lower",
-        cmap=MFCC_COLORMAP,
-        norm=color_normalization,
+    feature_axis = axes[0, 0]
+    _plot_feature_values(
+        feature_axis,
+        example.value,
+        color_normalization,
+        x_axis_label,
+        y_axis_label,
+        colorbar_label,
+        figure,
     )
     true_label = class_names.get(example.label, str(example.label))
     predicted_label = class_names.get(output.prediction, str(output.prediction))
     title_color = "forestgreen" if output.prediction == example.label else "crimson"
-    mfcc_axis.set(ylabel="MFCC coefficient")
-    mfcc_axis.tick_params(axis="x", bottom=False, labelbottom=False)
+    feature_axis.tick_params(axis="x", bottom=False, labelbottom=False)
     if attribution_count == 0:
-        mfcc_axis.set(xlabel="Frame")
-        mfcc_axis.tick_params(axis="x", bottom=True, labelbottom=True)
+        feature_axis.set(xlabel=x_axis_label)
+        feature_axis.tick_params(axis="x", bottom=True, labelbottom=True)
     figure.suptitle(
         f"True: {true_label} | Predicted: {predicted_label} ({output.confidence:.3f})",
         color=title_color,
         fontsize=24,
     )
-    figure.colorbar(image, ax=mfcc_axis, label="MFCC value")
-
     attribution_index = 1
     for attribution, label, color in (
         (output.grad_cam, "Grad-Cam", "crimson"),
@@ -171,9 +182,40 @@ def _save_output_page(
         frames = np.arange(attribution.size)
         attribution_axis.plot(frames, attribution, color=color, linewidth=1.5)
         attribution_axis.fill_between(frames, attribution, color=color, alpha=0.25)
-        attribution_axis.set(xlabel="Frame", ylabel=label, ylim=(0, 1))
+        attribution_axis.set(xlabel=x_axis_label, ylabel=label, ylim=(0, 1))
         attribution_axis.grid(axis="y", alpha=0.25)
         attribution_index += 1
     pdf.savefig(figure)
     plt.close(figure)
+    return
+
+
+def _plot_feature_values(
+    axis,
+    values:np.ndarray,
+    color_normalization:TwoSlopeNorm,
+    x_axis_label:str,
+    y_axis_label:str,
+    colorbar_label:str,
+    figure,
+) -> None:
+    if values.ndim == 1:
+        frames = np.arange(values.size)
+        axis.plot(frames, values, color="midnightblue", linewidth=1.25)
+        axis.set(ylabel=y_axis_label)
+        axis.grid(axis="y", alpha=0.25)
+        return
+
+    if values.ndim != 2:
+        raise ValueError("model output features must be a one- or two-dimensional array")
+
+    image = axis.imshow(
+        values.T,
+        aspect="auto",
+        origin="lower",
+        cmap=FEATURE_COLORMAP,
+        norm=color_normalization,
+    )
+    axis.set(ylabel=y_axis_label)
+    figure.colorbar(image, ax=axis, label=colorbar_label)
     return

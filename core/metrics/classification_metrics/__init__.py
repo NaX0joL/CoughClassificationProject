@@ -8,6 +8,8 @@ from .calculator import ClassificationMetrics, ClassificationMetricsCalculator
 from .f1_score import F1ScoreMetric
 from .macro_accuracy import MacroAccuracyMetric
 from .macro_f1_score import MacroF1ScoreMetric
+from .macro_precision import MacroPrecisionMetric
+from .macro_recall import MacroRecallMetric
 from .pr_auc import PRAucMetric
 from .precision import PrecisionMetric
 from .recall import RecallMetric
@@ -40,6 +42,8 @@ __all__ = [
     "F1ScoreMetric",
     "MacroAccuracyMetric",
     "MacroF1ScoreMetric",
+    "MacroPrecisionMetric",
+    "MacroRecallMetric",
     "PRAucMetric",
     "PrecisionMetric",
     "RecallMetric",

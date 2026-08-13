@@ -3,6 +3,8 @@ from core.metrics import (
     F1ScoreMetric,
     MacroAccuracyMetric,
     MacroF1ScoreMetric,
+    MacroPrecisionMetric,
+    MacroRecallMetric,
     MetricsConfig,
     PRAucMetric,
     PrecisionMetric,
@@ -23,5 +25,7 @@ default_metrics_config = MetricsConfig(
         AccuracyMetric(),
         MacroAccuracyMetric(),
         MacroF1ScoreMetric(),
+        MacroPrecisionMetric(),
+        MacroRecallMetric(),
     ),
 )

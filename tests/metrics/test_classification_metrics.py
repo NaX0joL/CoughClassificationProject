@@ -31,6 +31,8 @@ def test_calculate_classification_metrics_for_binary_classification() -> None:
     assert metrics.accuracy == pytest.approx(0.75)
     assert metrics.macro_accuracy == pytest.approx(0.75)
     assert metrics.macro_f1_score == pytest.approx(0.7333333333)
+    assert metrics.macro_precision == pytest.approx(0.8333333333)
+    assert metrics.macro_recall == pytest.approx(0.75)
     assert metrics.to_dict() == {
         "roc_auc": pytest.approx(1.0),
         "pr_auc": pytest.approx(1.0),
@@ -41,6 +43,8 @@ def test_calculate_classification_metrics_for_binary_classification() -> None:
         "accuracy": pytest.approx(0.75),
         "macro_accuracy": pytest.approx(0.75),
         "macro_f1_score": pytest.approx(0.7333333333),
+        "macro_precision": pytest.approx(0.8333333333),
+        "macro_recall": pytest.approx(0.75),
     }
 
 
@@ -116,4 +120,6 @@ def test_metrics_config_default_contains_all_standard_metrics() -> None:
         "accuracy",
         "macro_accuracy",
         "macro_f1_score",
+        "macro_precision",
+        "macro_recall",
     ]

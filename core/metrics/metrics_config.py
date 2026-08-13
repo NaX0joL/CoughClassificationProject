@@ -6,6 +6,8 @@ from .classification_metrics import (
     F1ScoreMetric,
     MacroAccuracyMetric,
     MacroF1ScoreMetric,
+    MacroPrecisionMetric,
+    MacroRecallMetric,
     PRAucMetric,
     PrecisionMetric,
     RecallMetric,
@@ -31,5 +33,7 @@ class MetricsConfig:
                 AccuracyMetric(),
                 MacroAccuracyMetric(),
                 MacroF1ScoreMetric(),
+                MacroPrecisionMetric(),
+                MacroRecallMetric(),
             ),
         )

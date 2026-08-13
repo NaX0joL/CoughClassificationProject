@@ -24,7 +24,7 @@ from config_plan import (
     patchtst_config,
     default_training_config,
     default_metrics_config,
-    default_persistence_config,
+    mfcc_persistence_config,
 )
 
 
@@ -94,7 +94,7 @@ def main():
         model_config=patchtst_config,
         training_config=default_training_config,
         metrics_config=default_metrics_config,
-        persistence_config=default_persistence_config,
+        persistence_config=mfcc_persistence_config,
     )
     
     exp = ExperimentOrchestrator(
