@@ -50,6 +50,22 @@ METRICS_BY_NAME = {
     "macro_recall": MacroRecallMetric,
 }
 
+# Metrics calculated when --metrics is not supplied. Set a value to False to
+# omit that metric from the script-wide default report.
+DEFAULT_METRICS = {
+    "roc_auc": True,
+    "pr_auc": True,
+    "precision": True,
+    "recall": True,
+    "specificity": True,
+    "f1_score": True,
+    "accuracy": True,
+    "macro_accuracy": True,
+    "macro_f1_score": True,
+    "macro_precision": True,
+    "macro_recall": True,
+}
+
 
 def find_mpkg_folders(folder):
     # An mpkg run folder contains this marker file.
@@ -59,7 +75,7 @@ def find_mpkg_folders(folder):
     return mpkg_folders
 
 
-def recompute_one_mpkg(mpkg_folder, metrics_config=None):
+def recompute_one_mpkg(mpkg_folder, metrics_config):
     """Return one row of metrics for every saved fold in an mpkg folder."""
     print(f"Checking {mpkg_folder.name}...")
 
@@ -73,7 +89,7 @@ def recompute_one_mpkg(mpkg_folder, metrics_config=None):
     if len(experiment.persisted_folds) != len(validation_folds):
         raise ValueError(f"Saved models and validation folds do not match: {mpkg_folder}")
 
-    evaluator = ModelEvaluator(metrics_config or experiment.config.metrics_config)
+    evaluator = ModelEvaluator(metrics_config)
     fold_rows = []
 
     # Evaluate each saved fold model on its corresponding validation fold.
@@ -131,18 +147,23 @@ def main():
         choices=METRICS_BY_NAME,
         metavar="METRIC",
         help=(
-            "Metrics to calculate. If omitted, uses the metrics saved with each "
-            "experiment. Choices: " + ", ".join(METRICS_BY_NAME)
+            "Metrics to calculate instead of DEFAULT_METRICS. Choices: "
+            + ", ".join(METRICS_BY_NAME)
         ),
     )
     args = parser.parse_args()
 
     mpkg_folders = find_mpkg_folders(args.folder)
-    selected_metrics_config = None
-    if args.metrics:
-        selected_metrics_config = MetricsConfig(
-            metrics=tuple(METRICS_BY_NAME[name]() for name in args.metrics),
-        )
+    selected_metric_names = args.metrics or [
+        name for name, is_enabled in DEFAULT_METRICS.items() if is_enabled
+    ]
+    if not selected_metric_names:
+        parser.error("Enable at least one metric in DEFAULT_METRICS or use --metrics")
+    selected_metrics_config = MetricsConfig(
+        metrics=tuple(
+            METRICS_BY_NAME[name]() for name in selected_metric_names
+        ),
+    )
 
     fold_rows = []
     for mpkg_folder in mpkg_folders:

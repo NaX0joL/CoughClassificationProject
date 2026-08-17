@@ -6,6 +6,10 @@ outputs/
 data/
 tmp_trash/
 
+# opencode related
+AGENTS.md
+opencode.json
+
 # additional
 AGENT.md
 CODING_PRINCIPLES.md
