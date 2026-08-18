@@ -10,6 +10,7 @@ from .model import FullModel
 from .training import LossLog, Trainer
 from .metrics import ModelEvaluator
 from .persistence import ExperimentPersistence
+from .gallery import save_gallery
 
 
 
@@ -96,6 +97,13 @@ class ExperimentOrchestrator:
 
         data_pipeline = DataPipeline.create(self.config.data_pipeline_config)
         data_split = data_pipeline.get_data_split()
+
+        save_gallery(
+            examples=data_pipeline.get_examples(),
+            data_pipeline_config=self.config.data_pipeline_config,
+            experiment_id=self.experiment_id,
+            random_seed=self.config.training_config.random_seed,
+        )
 
         model_evaluator = ModelEvaluator(self.config.metrics_config)
 

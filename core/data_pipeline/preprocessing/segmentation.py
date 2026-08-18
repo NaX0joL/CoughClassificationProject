@@ -69,24 +69,13 @@ class SlidingWindowSegmenter(Segmenter):
 
     def __init__(
         self,
-        window_size:int|float,
-        stride:int|float,
-        sample_rate:int|None=None,
+        window_size:int,
+        stride:int,
         keep_short_segments:bool=False,
         kept_metadata_key:list[str]|None=None,
     ) -> None:
-        if isinstance(window_size, float) or isinstance(stride, float):
-            if sample_rate is None:
-                raise ValueError(
-                    "sample_rate is required when window_size or stride "
-                    "are specified in seconds (float)"
-                )
-            if sample_rate <= 0:
-                raise ValueError("sample_rate must be positive")
-
         self.window_size = window_size
         self.stride = stride
-        self.sample_rate = sample_rate
         self.keep_short_segments = keep_short_segments
         self.kept_metadata_key = kept_metadata_key if kept_metadata_key is not None else []
         return
@@ -109,17 +98,15 @@ class SlidingWindowSegmenter(Segmenter):
             str(source_series.label),
         )
 
-        window_samples = self._resolve_samples(self.window_size)
-        stride_samples = self._resolve_samples(self.stride)
         signal = source_series.value
         total_samples = len(signal)
         examples = []
 
-        for start in range(0, total_samples, stride_samples):
-            end = start + window_samples
+        for start in range(0, total_samples, self.stride):
+            end = start + self.window_size
             segment = signal[start:end]
 
-            if len(segment) < window_samples and not self.keep_short_segments:
+            if len(segment) < self.window_size and not self.keep_short_segments:
                 continue
 
             examples.append(Example(
@@ -129,8 +116,3 @@ class SlidingWindowSegmenter(Segmenter):
             ))
 
         return examples
-
-    def _resolve_samples(self, size:int|float) -> int:
-        if isinstance(size, float):
-            return int(size * self.sample_rate)  # type: ignore[operator]
-        return size
