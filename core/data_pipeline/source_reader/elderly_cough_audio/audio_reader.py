@@ -15,7 +15,7 @@ from .audio_resampler import AudioResampler
 SUPPORTED_AUDIO_SUFFIXES = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac", ".wma"}
 TARGET_SAMPLING_RATE = 16_000
 AUDIO_PREPROCESSING_VERSION = 1
-CACHE_FOLDER = Path("outputs/cache/audio_16khz_v1")
+CACHE_FOLDER = Path(f"outputs/cache/audio_{TARGET_SAMPLING_RATE // 1000}khz_v{AUDIO_PREPROCESSING_VERSION}")
 
 
 

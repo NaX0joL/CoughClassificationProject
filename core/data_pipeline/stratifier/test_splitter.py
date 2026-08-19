@@ -1,4 +1,5 @@
-from sklearn.model_selection import train_test_split
+import numpy as np
+from sklearn.model_selection import StratifiedGroupKFold
 
 from ..intermediary import Example
 
@@ -10,45 +11,36 @@ def split_development_and_test(
     test_ratio:float=0.2,
     random_seed:int=42,
 ) -> tuple[list[Example], list[Example]]:
-    group_labels = _get_group_labels(examples, group_metadata_key)
-    group_ids = list(group_labels)
-    labels = list(group_labels.values())
+    n_splits = max(2, round(1 / test_ratio))
 
-    development_group_ids, test_group_ids = train_test_split(
-        group_ids,
-        test_size=test_ratio,
-        stratify=labels,
+    sample_indices = np.arange(len(examples))
+    labels = np.asarray([
+        example.label
+        for example in examples
+    ])
+    groups = np.asarray([
+        example.metadata[group_metadata_key]
+        for example in examples
+    ])
+
+    stratifier = StratifiedGroupKFold(
+        n_splits=n_splits,
+        shuffle=True,
         random_state=random_seed,
     )
-    development_group_ids = set(development_group_ids)
-    test_group_ids = set(test_group_ids)
+
+    train_indices, test_indices = next(iter(stratifier.split(
+        sample_indices,
+        labels,
+        groups,
+    )))
 
     development_examples = [
-        example
-        for example in examples
-        if example.metadata[group_metadata_key] in development_group_ids
+        examples[index]
+        for index in train_indices
     ]
     test_examples = [
-        example
-        for example in examples
-        if example.metadata[group_metadata_key] in test_group_ids
+        examples[index]
+        for index in test_indices
     ]
     return development_examples, test_examples
-
-
-
-def _get_group_labels(
-    examples:list[Example],
-    group_metadata_key:str,
-) -> dict[object, int]:
-    group_labels = {}
-
-    for example in examples:
-        group_id = example.metadata[group_metadata_key]
-
-        if group_id in group_labels and group_labels[group_id] != example.label:
-            raise ValueError("each group must have one consistent label")
-
-        group_labels[group_id] = example.label
-
-    return group_labels
