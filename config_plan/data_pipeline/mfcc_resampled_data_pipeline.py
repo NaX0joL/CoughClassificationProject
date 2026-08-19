@@ -1,27 +1,31 @@
+
 from core.data_pipeline import DataPipelineConfig
-from core.data_pipeline.preprocessing import SlidingWindowSegmenter, MFCC, ZeroPadder
+from core.data_pipeline.preprocessing import CoughSegmenter, MFCC, Resampler, ZeroPadder
 from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
 from core.data_pipeline.stratifier import DataSplitter
 
 
-mfcc_sliding_window_data_pipeline_config = DataPipelineConfig(
+mfcc_resampled_data_pipeline_config = DataPipelineConfig(
     source_reader=ElderlyCoughAudioSourceReader(),
-    segmenter=SlidingWindowSegmenter(
-        window_size=32_000,
-        stride=8_000,
-        keep_short_segments=False,
+    segmenter=CoughSegmenter(
         kept_metadata_key=["patient_id", "cough_audio"],
     ),
-    transformer=MFCC(
-        sample_rate=16_000,
-        n_fft=400,
-        win_length=400,
-        hop_length=160,
-        n_mels=40,
-        n_mfcc=40,
-    ),
+    transformer=[
+        MFCC(
+            sample_rate=16_000,
+            n_fft=400,
+            win_length=400,
+            hop_length=160,
+            n_mels=40,
+            n_mfcc=40,
+        ),
+        Resampler(
+            target_length=500,
+            method="linear",
+        ),
+    ],
     padder=ZeroPadder(
-        target_length=200,
+        target_length=820,
         padding_type="random",
         random_seed=42,
     ),

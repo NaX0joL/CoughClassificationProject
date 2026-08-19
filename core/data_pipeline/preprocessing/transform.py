@@ -130,6 +130,79 @@ class MelBand(Transformer):
         return log_mel_bands.transpose(0, 1).numpy()
 
 
+INTERPOLATION_METHODS = ("linear", "nearest")
+
+
+class Resampler(Transformer):
+    """Resize feature arrays to a fixed target length via interpolation."""
+
+    def __init__(
+        self,
+        target_length:int,
+        method:str="linear",
+    ) -> None:
+        if target_length <= 0:
+            raise ValueError("target_length must be positive")
+        if method not in INTERPOLATION_METHODS:
+            raise ValueError(f"method must be one of {INTERPOLATION_METHODS}")
+
+        self.target_length = target_length
+        self.method = method
+        return
+
+    def transform(self, examples:list[Example]) -> list[Example]:
+        transformed_examples = []
+
+        for example in examples:
+            transformed_example = Example(
+                value=self._resample_value(example.value),
+                label=example.label,
+                metadata=example.metadata,
+            )
+            transformed_examples.append(transformed_example)
+
+        return transformed_examples
+
+    def _resample_value(self, value:np.ndarray) -> np.ndarray:
+        if value.size == 0:
+            raise ValueError("Resampler requires a non-empty array")
+
+        source_length = value.shape[0]
+        if source_length == self.target_length:
+            return value.copy()
+
+        if self.method == "linear":
+            return self._linear_interpolate(value, source_length)
+
+        return self._nearest_interpolate(value, source_length)
+
+    def _linear_interpolate(
+        self,
+        value:np.ndarray,
+        source_length:int,
+    ) -> np.ndarray:
+        source_indices = np.linspace(0, source_length - 1, num=source_length)
+        target_indices = np.linspace(0, source_length - 1, num=self.target_length)
+        resampled = np.zeros((self.target_length, value.shape[1]))
+
+        for col in range(value.shape[1]):
+            resampled[:, col] = np.interp(target_indices, source_indices, value[:, col])
+
+        return resampled
+
+    def _nearest_interpolate(
+        self,
+        value:np.ndarray,
+        source_length:int,
+    ) -> np.ndarray:
+        source_indices = np.linspace(0, source_length - 1, num=source_length)
+        target_indices = np.linspace(0, source_length - 1, num=self.target_length)
+        nearest_indices = np.searchsorted(source_indices, target_indices, side="right") - 1
+        nearest_indices = np.clip(nearest_indices, 0, source_length - 1)
+
+        return value[nearest_indices].copy()
+
+
 def _validate_feature_parameters(
     sample_rate:int,
     n_fft:int,

@@ -1,4 +1,5 @@
 
+
 from dataclasses import dataclass
 
 from .abstract import Padder, Segmenter, SourceReader, Splitter, Transformer
@@ -12,7 +13,7 @@ from .intermediary import DataSplit, Example
 class DataPipeline:
     source_reader: SourceReader
     segmenter: Segmenter
-    transformer: Transformer
+    transformer: Transformer | list[Transformer]
     padder: Padder
     splitter:Splitter
 
@@ -30,10 +31,18 @@ class DataPipeline:
         )
         return pipeline
 
+    def _apply_transformers(self, examples:list[Example]) -> list[Example]:
+        if isinstance(self.transformer, list):
+            for t in self.transformer:
+                examples = t.transform(examples)
+            return examples
+
+        return self.transformer.transform(examples)
+
     def get_examples(self) -> list[Example]:
         source_series = self.source_reader.get_source_series()
         examples = self.segmenter.segment(source_series)
-        examples = self.transformer.transform(examples)
+        examples = self._apply_transformers(examples)
         examples = self.padder.pad(examples)
         return examples
 

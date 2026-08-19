@@ -8,7 +8,7 @@ from .abstract import SourceReader, Segmenter, Transformer, Padder, Splitter
 class DataPipelineConfig:
     source_reader:SourceReader
     segmenter:Segmenter
-    transformer:Transformer
+    transformer:Transformer | list[Transformer]
     padder:Padder
     splitter:Splitter
 
