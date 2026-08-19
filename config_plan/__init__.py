@@ -1,5 +1,7 @@
 from .data_pipeline.mfcc_data_pipeline import mfcc_data_pipeline_config
 from .data_pipeline.melband_data_pipeline import melband_data_pipeline_config
+from .data_pipeline.mfcc_sliding_window_data_pipeline import mfcc_sliding_window_data_pipeline_config
+from .data_pipeline.melband_sliding_window_data_pipeline import melband_sliding_window_data_pipeline_config
 
 from .metrics.default_metrics import default_metrics_config
 
@@ -27,6 +29,8 @@ from .training.small_batch_training import small_batch_training_config
 __all__ = [
     "mfcc_data_pipeline_config",
     "melband_data_pipeline_config",
+    "mfcc_sliding_window_data_pipeline_config",
+    "melband_sliding_window_data_pipeline_config",
     
     "default_metrics_config",
     

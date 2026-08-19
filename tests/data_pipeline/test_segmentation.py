@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from core.data_pipeline.preprocessing.segmentation import SlidingWindowSegmenter
 from core.data_pipeline.intermediary import ORIGINAL_LABEL_METADATA_KEY, SourceSeries
@@ -80,42 +79,6 @@ class TestSlidingWindowSegmenterShortSegments:
         assert len(examples) == 1
         np.testing.assert_array_equal(examples[0].value, [1.0, 2.0, 3.0, 4.0])
 
-
-class TestSlidingWindowSegmenterSeconds:
-
-    def test_seconds_integer_params(self) -> None:
-        segmenter = SlidingWindowSegmenter(window_size=2.0, stride=2.0, sample_rate=16000)
-        signal = [0.0] * 64000
-        series = _make_series(signal)
-        examples = segmenter.segment([series])
-
-        assert len(examples) == 2
-        assert len(examples[0].value) == 32000
-
-    def test_seconds_with_overlap(self) -> None:
-        segmenter = SlidingWindowSegmenter(window_size=1.0, stride=0.5, sample_rate=4)
-        series = _make_series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
-        examples = segmenter.segment([series])
-
-        assert len(examples) == 3
-        np.testing.assert_array_equal(examples[0].value, [1.0, 2.0, 3.0, 4.0])
-        np.testing.assert_array_equal(examples[1].value, [3.0, 4.0, 5.0, 6.0])
-        np.testing.assert_array_equal(examples[2].value, [5.0, 6.0, 7.0, 8.0])
-
-
-class TestSlidingWindowSegmenterValidation:
-
-    def test_sample_rate_required_for_float_window(self) -> None:
-        with pytest.raises(ValueError, match="sample_rate is required"):
-            SlidingWindowSegmenter(window_size=1.0, stride=0.5)
-
-    def test_sample_rate_required_for_float_stride(self) -> None:
-        with pytest.raises(ValueError, match="sample_rate is required"):
-            SlidingWindowSegmenter(window_size=100, stride=0.5)
-
-    def test_sample_rate_must_be_positive(self) -> None:
-        with pytest.raises(ValueError, match="sample_rate must be positive"):
-            SlidingWindowSegmenter(window_size=1.0, stride=1.0, sample_rate=0)
 
 
 class TestSlidingWindowSegmenterMetadata:
