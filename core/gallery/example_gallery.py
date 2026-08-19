@@ -1,7 +1,7 @@
 
 
 import hashlib
-import pickle
+import json
 from dataclasses import fields, is_dataclass
 from pathlib import Path
 from pprint import pformat
@@ -32,6 +32,7 @@ class ExampleGalleryGenerator:
         x_axis_label:str="Frame",
         y_axis_label:str="Feature bin",
         colorbar_label:str="Value",
+        regenerate:bool=False,
     ) -> None:
         self.data_pipeline_config = data_pipeline_config
         self.gallery_directory = gallery_directory
@@ -41,18 +42,23 @@ class ExampleGalleryGenerator:
         self.x_axis_label = x_axis_label
         self.y_axis_label = y_axis_label
         self.colorbar_label = colorbar_label
+        self.regenerate = regenerate
         return
 
     def generate(self, examples:list[Example]) -> Path:
         gallery_dir = self._gallery_directory()
         gallery_dir.mkdir(parents=True, exist_ok=True)
 
+        pdf_path = gallery_dir / "examples.pdf"
+
+        if not self.regenerate and pdf_path.exists():
+            return pdf_path
+
         save_data_pipeline_config(
             self.data_pipeline_config,
             gallery_dir / "data_pipeline_config.txt",
         )
 
-        pdf_path = gallery_dir / "examples.pdf"
         save_examples_pdf(
             examples=examples,
             path=pdf_path,
@@ -141,14 +147,50 @@ def save_examples_pdf(
     return indices.tolist()
 
 
+def _extract_init_params(component:Any) -> dict[str, Any]|None:
+    if component is None:
+        return None
+    return {
+        name: value
+        for name, value in vars(component).items()
+        if _is_hashable_primitive(value)
+    }
+
+
+def _extract_transformer_params(
+    transformer:Any|list[Any]|None,
+) -> Any:
+    if transformer is None:
+        return None
+    if isinstance(transformer, list):
+        return [_extract_init_params(t) for t in transformer]
+    return _extract_init_params(transformer)
+
+
+def _is_hashable_primitive(value:Any) -> bool:
+    if isinstance(value, (str, int, float, bool, type(None))):
+        return True
+    if isinstance(value, Path):
+        return True
+    if isinstance(value, (list, tuple)):
+        return all(_is_hashable_primitive(item) for item in value)
+    return False
+
+
 def _compute_cache_hash(
     config:DataPipelineConfig,
     random_seed:int|None,
 ) -> str:
-    data = pickle.dumps({
-        "data_pipeline": config,
+    representation = {
+        "name": config.name,
+        "source_reader": _extract_init_params(config.source_reader),
+        "segmenter": _extract_init_params(config.segmenter),
+        "transformer": _extract_transformer_params(config.transformer),
+        "padder": _extract_init_params(config.padder),
+        "splitter": _extract_init_params(config.splitter),
         "seed": random_seed,
-    })
+    }
+    data = json.dumps(representation, sort_keys=True, default=str).encode()
     return hashlib.sha256(data).hexdigest()[:12]
 
 
