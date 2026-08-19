@@ -13,8 +13,8 @@ from .intermediary import DataSplit, Example
 class DataPipeline:
     source_reader: SourceReader
     segmenter: Segmenter
-    transformer: Transformer | list[Transformer]
-    padder: Padder
+    transformer: Transformer | list[Transformer] | None
+    padder: Padder | None
     splitter:Splitter
 
     @classmethod
@@ -31,19 +31,24 @@ class DataPipeline:
         )
         return pipeline
 
+    def get_examples(self) -> list[Example]:
+        source_series = self.source_reader.get_source_series()
+        examples = self.segmenter.segment(source_series)
+        if self.transformer is not None:
+            examples = self._apply_transformers(examples)
+        if self.padder is not None:
+            examples = self.padder.pad(examples)
+        return examples
+    
     def _apply_transformers(self, examples:list[Example]) -> list[Example]:
         if isinstance(self.transformer, list):
             for t in self.transformer:
                 examples = t.transform(examples)
             return examples
 
-        return self.transformer.transform(examples)
-
-    def get_examples(self) -> list[Example]:
-        source_series = self.source_reader.get_source_series()
-        examples = self.segmenter.segment(source_series)
-        examples = self._apply_transformers(examples)
-        examples = self.padder.pad(examples)
+        elif self.transformer is not None:
+            return self.transformer.transform(examples)    
+        
         return examples
 
     def get_dataset(self) -> ExampleDataset:

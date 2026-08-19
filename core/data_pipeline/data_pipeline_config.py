@@ -8,8 +8,8 @@ from .abstract import SourceReader, Segmenter, Transformer, Padder, Splitter
 class DataPipelineConfig:
     source_reader:SourceReader
     segmenter:Segmenter
-    transformer:Transformer | list[Transformer]
-    padder:Padder
+    transformer:Transformer | list[Transformer] | None
+    padder:Padder | None
     splitter:Splitter
 
     @classmethod

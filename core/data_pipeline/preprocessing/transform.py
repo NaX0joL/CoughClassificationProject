@@ -1,10 +1,12 @@
-
 import numpy as np
 import torch
 import torchaudio
+import torchaudio.transforms as T 
 
 from ..abstract import Transformer
 from ..intermediary import Example
+
+
 
 class MFCC(Transformer):
 
@@ -24,6 +26,7 @@ class MFCC(Transformer):
             hop_length=hop_length,
             n_mels=n_mels,
         )
+        
         if n_mfcc <= 0:
             raise ValueError("n_mfcc must be positive")
         if n_mfcc > n_mels:
@@ -70,8 +73,8 @@ class MFCC(Transformer):
         return coefficients.transpose(0, 1).numpy()
 
 
+
 class MelBand(Transformer):
-    """Convert waveforms to log-mel band energies."""
 
     def __init__(
         self,
@@ -89,6 +92,7 @@ class MelBand(Transformer):
             hop_length=hop_length,
             n_mels=n_mels,
         )
+        
         if log_offset <= 0:
             raise ValueError("log_offset must be positive")
 
@@ -130,11 +134,68 @@ class MelBand(Transformer):
         return log_mel_bands.transpose(0, 1).numpy()
 
 
-INTERPOLATION_METHODS = ("linear", "nearest")
+
+class AudioDownSampler(Transformer):
+    
+    RESAMPLING_METHOD = ("sinc_interp_hann", "sinc_interp_kaiser")
+    
+    def __init__(
+        self,
+        original_sampling_rate:int,
+        target_sampling_rate:int,
+        resampling_method:str = "sinc_interp_hann",
+        lowpass_filter_width:int=6,
+    ) -> None:
+        if original_sampling_rate <= 0 or target_sampling_rate <= 0:
+            raise ValueError("Sample rates must be positive integers.")
+        if not resampling_method in self.RESAMPLING_METHOD:
+            raise ValueError(f"method must be one of {self.RESAMPLING_METHOD}")
+        
+        self.original_sampling_rate = original_sampling_rate
+        self.lowpass_filter_width = lowpass_filter_width
+
+        if original_sampling_rate == target_sampling_rate:
+            self.resampler = None
+        else:
+            self.resampler = T.Resample(
+                orig_freq=original_sampling_rate,
+                new_freq=target_sampling_rate,
+                lowpass_filter_width=lowpass_filter_width,
+                resampling_method=resampling_method,
+            )
+        
+        return
+        
+    def transform(self, examples:list[Example]) -> list[Example]:
+        transformed_examples = []
+
+        for example in examples:
+            transformed_example = Example(
+                value=self._resample_value(example.value),
+                label=example.label,
+                metadata=example.metadata,
+            )
+            transformed_examples.append(transformed_example)
+
+        return transformed_examples
+
+    def _resample_value(self, value:np.ndarray) -> np.ndarray:
+        if value.size == 0:
+            raise ValueError("AudioDownSampler requires a non-empty audio array.")
+
+        if self.resampler is None:
+            return value.copy()
+
+        # Torchaudio expects shape: (..., time), so flip the last two dim
+        waveform = torch.as_tensor(value, dtype=torch.float32).T
+        resampled = self.resampler(waveform)
+        return resampled.T.numpy()
+
 
 
 class Resampler(Transformer):
-    """Resize feature arrays to a fixed target length via interpolation."""
+    
+    INTERPOLATION_METHODS = ("linear", "nearest")
 
     def __init__(
         self,
@@ -143,8 +204,8 @@ class Resampler(Transformer):
     ) -> None:
         if target_length <= 0:
             raise ValueError("target_length must be positive")
-        if method not in INTERPOLATION_METHODS:
-            raise ValueError(f"method must be one of {INTERPOLATION_METHODS}")
+        if method not in self.INTERPOLATION_METHODS:
+            raise ValueError(f"method must be one of {self.INTERPOLATION_METHODS}")
 
         self.target_length = target_length
         self.method = method
@@ -174,7 +235,10 @@ class Resampler(Transformer):
         if self.method == "linear":
             return self._linear_interpolate(value, source_length)
 
-        return self._nearest_interpolate(value, source_length)
+        if self.method == "nearest":
+            return self._nearest_interpolate(value, source_length)
+        
+        raise ValueError(f"invalid interpolation method, got {self.method}")
 
     def _linear_interpolate(
         self,
