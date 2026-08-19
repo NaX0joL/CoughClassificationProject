@@ -6,6 +6,7 @@ from core.data_pipeline.stratifier import DataSplitter
 
 
 melband_sliding_window_data_pipeline_config = DataPipelineConfig(
+    name="mel_band_sliding_window",
     source_reader=ElderlyCoughAudioSourceReader(),
     segmenter=SlidingWindowSegmenter(
         window_size=8200,

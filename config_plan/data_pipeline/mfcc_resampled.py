@@ -6,6 +6,7 @@ from core.data_pipeline.stratifier import DataSplitter
 
 
 mfcc_resampled_data_pipeline_config = DataPipelineConfig(
+    name="mfcc_resampled",
     source_reader=ElderlyCoughAudioSourceReader(),
     segmenter=CoughSegmenter(
         kept_metadata_key=["patient_id", "cough_audio"],

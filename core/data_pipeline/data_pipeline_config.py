@@ -11,6 +11,7 @@ class DataPipelineConfig:
     transformer:Transformer | list[Transformer] | None
     padder:Padder | None
     splitter:Splitter
+    name:str|None = None
 
     @classmethod
     def default(cls) -> "DataPipelineConfig":
@@ -42,5 +43,6 @@ class DataPipelineConfig:
                 number_of_folds=5,
                 random_seed=42,
             ),
+            name="default",
         )
         return data_pipeline_config

@@ -1,27 +1,20 @@
 from dataclasses import asdict
 from pathlib import Path
 
-from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
-from core.data_pipeline import DataPipeline, DataPipelineConfig
-from core.data_pipeline.preprocessing import CoughSegmenter, MFCC, ZeroPadder
-from core.data_pipeline.stratifier import DataSplitter
-
-from core.model import FullModel, ModelConfig
-from core.model.architectures.MLP import MLP, MLPConfig
-from core.model.behavior.classification_behavior import ClassificationBehavior
-
-from core.training import TrainingConfig
-
-from core.metrics import MetricsConfig
-from core.persistence import PersistenceConfig
-
 from core.experiment import ExperimentOrchestrator
 from core.experiment_config import ExperimentConfig
 from config_plan import (
     mfcc_data_pipeline_config,
+    mfcc_sliding_window_data_pipeline_config,
+    mfcc_resampled_data_pipeline_config,
+    melband_data_pipeline_config,
+    melband_sliding_window_data_pipeline_config,
+    raw_downsampled_sliding_window_data_pipeline_config,
+    
     mlp_config,
     lenet_config,
     patchtst_config,
+    
     default_training_config,
     default_metrics_config,
     default_persistence_config,
@@ -33,7 +26,7 @@ def main():
     
     exp_config = ExperimentConfig(
         data_pipeline_config=mfcc_data_pipeline_config,
-        model_config=patchtst_config,
+        model_config=mlp_config,
         training_config=default_training_config,
         metrics_config=default_metrics_config,
         persistence_config=default_persistence_config,

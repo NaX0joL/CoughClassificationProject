@@ -14,7 +14,7 @@ import pandas as pd
 
 
 # Let this script import project files when run from the project root.
-project_root = Path(__file__).resolve().parents[1]
+project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(project_root))
 
 from core.data_pipeline import DataPipeline

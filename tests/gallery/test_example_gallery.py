@@ -11,9 +11,9 @@ from core.data_pipeline.preprocessing import CoughSegmenter, MFCC, ZeroPadder
 from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
 from core.data_pipeline.stratifier import DataSplitter
 from core.gallery.example_gallery import (
+    ExampleGalleryGenerator,
     save_data_pipeline_config,
     save_examples_pdf,
-    save_gallery,
     _compute_cache_hash,
 )
 
@@ -33,6 +33,7 @@ def _make_config() -> DataPipelineConfig:
         transformer=MFCC(sample_rate=16_000, n_fft=400, win_length=400, hop_length=160, n_mels=40, n_mfcc=40),
         padder=ZeroPadder(target_length=820, padding_type="random", random_seed=42),
         splitter=DataSplitter(group_metadata_key="patient_id", test_ratio=0.1, number_of_folds=5, random_seed=42),
+        name="test_config",
     )
 
 
@@ -154,102 +155,106 @@ class TestSaveDataPipelineConfig:
 class TestSaveGallery:
 
     def test_creates_gallery_folder_with_files(self, tmp_path) -> None:
-        import core.gallery.example_gallery as gallery_module
-        original_gallery_dir = gallery_module.GALLERY_DIRECTORY
-        original_cache_dir = gallery_module.CACHE_DIRECTORY
+        examples = [_make_example() for _ in range(5)]
+        config = _make_config()
 
-        gallery_module.GALLERY_DIRECTORY = tmp_path / "gallery"
-        gallery_module.CACHE_DIRECTORY = tmp_path / "cache"
+        generator = ExampleGalleryGenerator(
+            data_pipeline_config=config,
+            gallery_directory=tmp_path / "gallery",
+            random_seed=42,
+            num_examples=3,
+        )
+        result_path = generator.generate(examples)
 
-        try:
-            examples = [_make_example() for _ in range(5)]
-            config = _make_config()
+        gallery_dirs = list((tmp_path / "gallery").iterdir())
+        assert len(gallery_dirs) == 1
+        gallery_dir = gallery_dirs[0]
+        assert gallery_dir.name.startswith("test_config_")
+        assert (gallery_dir / "examples.pdf").exists()
+        assert (gallery_dir / "data_pipeline_config.txt").exists()
+        assert result_path == gallery_dir / "examples.pdf"
 
-            result_path = save_gallery(
-                examples=examples,
-                data_pipeline_config=config,
-                experiment_id="test_run",
-                random_seed=42,
-                num_examples=3,
-            )
+    def test_repeated_generate_overwrites_same_folder(self, tmp_path) -> None:
+        examples = [_make_example() for _ in range(5)]
+        config = _make_config()
 
-            gallery_dir = tmp_path / "gallery" / "test_run"
-            assert gallery_dir.exists()
-            assert (gallery_dir / "examples.pdf").exists()
-            assert (gallery_dir / "data_pipeline_config.txt").exists()
-            assert result_path == gallery_dir / "examples.pdf"
-        finally:
-            gallery_module.GALLERY_DIRECTORY = original_gallery_dir
-            gallery_module.CACHE_DIRECTORY = original_cache_dir
+        generator = ExampleGalleryGenerator(
+            data_pipeline_config=config,
+            gallery_directory=tmp_path / "gallery",
+            random_seed=42,
+            num_examples=3,
+        )
 
-    def test_cache_hit_skips_generation(self, tmp_path) -> None:
-        import core.gallery.example_gallery as gallery_module
-        original_gallery_dir = gallery_module.GALLERY_DIRECTORY
-        original_cache_dir = gallery_module.CACHE_DIRECTORY
+        path1 = generator.generate(examples)
+        path2 = generator.generate(examples)
+        assert path1 == path2
+        assert path1.stat().st_size > 0
 
-        gallery_module.GALLERY_DIRECTORY = tmp_path / "gallery"
-        gallery_module.CACHE_DIRECTORY = tmp_path / "cache"
+    def test_different_config_creates_new_gallery(self, tmp_path) -> None:
+        examples = [_make_example() for _ in range(5)]
+        config1 = _make_config()
+        config2 = _make_config()
+        config2.padder = ZeroPadder(target_length=500, padding_type="left")
 
-        try:
-            examples = [_make_example() for _ in range(5)]
-            config = _make_config()
+        generator1 = ExampleGalleryGenerator(
+            data_pipeline_config=config1,
+            gallery_directory=tmp_path / "gallery",
+            random_seed=42,
+            num_examples=3,
+        )
+        generator2 = ExampleGalleryGenerator(
+            data_pipeline_config=config2,
+            gallery_directory=tmp_path / "gallery",
+            random_seed=42,
+            num_examples=3,
+        )
 
-            save_gallery(
-                examples=examples,
-                data_pipeline_config=config,
-                experiment_id="run_1",
-                random_seed=42,
-                num_examples=3,
-            )
+        generator1.generate(examples)
+        generator2.generate(examples)
 
-            cache_files_before = list((tmp_path / "cache").glob("*.pdf"))
+        gallery_dirs = list((tmp_path / "gallery").iterdir())
+        assert len(gallery_dirs) == 2
+        dir_names = sorted(d.name for d in gallery_dirs)
+        assert dir_names[0] != dir_names[1]
 
-            save_gallery(
-                examples=examples,
-                data_pipeline_config=config,
-                experiment_id="run_2",
-                random_seed=42,
-                num_examples=3,
-            )
+    def test_collision_resolution_creates_suffixed_folder(self, tmp_path) -> None:
+        examples = [_make_example() for _ in range(5)]
+        config = _make_config()
 
-            cache_files_after = list((tmp_path / "cache").glob("*.pdf"))
-            assert len(cache_files_before) == len(cache_files_after)
-        finally:
-            gallery_module.GALLERY_DIRECTORY = original_gallery_dir
-            gallery_module.CACHE_DIRECTORY = original_cache_dir
+        gallery_dir = tmp_path / "gallery"
+        gallery_dir.mkdir()
 
-    def test_different_config_creates_new_cache(self, tmp_path) -> None:
-        import core.gallery.example_gallery as gallery_module
-        original_gallery_dir = gallery_module.GALLERY_DIRECTORY
-        original_cache_dir = gallery_module.CACHE_DIRECTORY
+        collision_dir = gallery_dir / "test_config_stalehash"
+        collision_dir.mkdir()
 
-        gallery_module.GALLERY_DIRECTORY = tmp_path / "gallery"
-        gallery_module.CACHE_DIRECTORY = tmp_path / "cache"
+        generator = ExampleGalleryGenerator(
+            data_pipeline_config=config,
+            gallery_directory=gallery_dir,
+            random_seed=42,
+            num_examples=3,
+        )
+        result_path = generator.generate(examples)
 
-        try:
-            examples = [_make_example() for _ in range(5)]
-            config1 = _make_config()
-            config2 = _make_config()
-            config2.padder = ZeroPadder(target_length=500, padding_type="left")
+        gallery_dirs = list(gallery_dir.iterdir())
+        assert len(gallery_dirs) == 2
+        config_hash = _compute_cache_hash(config, None)
+        assert result_path.parent.name == f"test_config_{config_hash}"
+        assert (result_path.parent / "examples.pdf").exists()
 
-            save_gallery(
-                examples=examples,
-                data_pipeline_config=config1,
-                experiment_id="run_1",
-                random_seed=42,
-                num_examples=3,
-            )
+    def test_no_name_uses_hash_only(self, tmp_path) -> None:
+        examples = [_make_example() for _ in range(5)]
+        config = _make_config()
+        config.name = None
 
-            save_gallery(
-                examples=examples,
-                data_pipeline_config=config2,
-                experiment_id="run_2",
-                random_seed=42,
-                num_examples=3,
-            )
+        generator = ExampleGalleryGenerator(
+            data_pipeline_config=config,
+            gallery_directory=tmp_path / "gallery",
+            random_seed=42,
+            num_examples=3,
+        )
+        result_path = generator.generate(examples)
 
-            cache_files = list((tmp_path / "cache").glob("*.pdf"))
-            assert len(cache_files) == 2
-        finally:
-            gallery_module.GALLERY_DIRECTORY = original_gallery_dir
-            gallery_module.CACHE_DIRECTORY = original_cache_dir
+        gallery_dirs = list((tmp_path / "gallery").iterdir())
+        assert len(gallery_dirs) == 1
+        config_hash = _compute_cache_hash(config, None)
+        assert gallery_dirs[0].name == config_hash

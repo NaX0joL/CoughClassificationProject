@@ -15,7 +15,7 @@ from .audio_resampler import AudioResampler
 SUPPORTED_AUDIO_SUFFIXES = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".aac", ".wma"}
 TARGET_SAMPLING_RATE = 16_000
 AUDIO_PREPROCESSING_VERSION = 1
-CACHE_FOLDER = Path("cache/audio_16khz_v1")
+CACHE_FOLDER = Path("outputs/cache/audio_16khz_v1")
 
 
 
@@ -26,8 +26,9 @@ class RawAudioReader:
         self.audio_resampler = AudioResampler(
             sampling_rate=TARGET_SAMPLING_RATE,
         )
+        project_root = Path(__file__).resolve().parents[4]
         self.audio_cache = AudioCache(
-            directory=self.directory.parent / CACHE_FOLDER,
+            directory=project_root / CACHE_FOLDER,
             source_directory=self.directory,
             sampling_rate=TARGET_SAMPLING_RATE,
             preprocessing_version=AUDIO_PREPROCESSING_VERSION,

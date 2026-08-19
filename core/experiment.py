@@ -10,7 +10,7 @@ from .model import FullModel
 from .training import LossLog, Trainer
 from .metrics import ModelEvaluator
 from .persistence import ExperimentPersistence
-from .gallery import save_gallery
+from .gallery import ExampleGalleryGenerator
 
 
 
@@ -72,7 +72,7 @@ class ExperimentOrchestrator:
         return experiment
 
     def test_model(self) -> None:
-        return
+        raise NotImplementedError
     
     def train_model(self) -> None:
         print(f"begin training {self.experiment_id}")
@@ -98,12 +98,12 @@ class ExperimentOrchestrator:
         data_pipeline = DataPipeline.create(self.config.data_pipeline_config)
         data_split = data_pipeline.get_data_split()
 
-        save_gallery(
-            examples=data_pipeline.get_examples(),
+        gallery = ExampleGalleryGenerator(
             data_pipeline_config=self.config.data_pipeline_config,
-            experiment_id=self.experiment_id,
             random_seed=self.config.training_config.random_seed,
+            num_examples=50,
         )
+        gallery.generate(data_pipeline.get_examples())
 
         model_evaluator = ModelEvaluator(self.config.metrics_config)
 
@@ -136,6 +136,9 @@ class ExperimentOrchestrator:
             )
 
         persistence.save_cross_validation_summary(folds_metrics)
+        
+        print("training finished")
+        print(f"mpkg stored in {persistence.run_directory}")
         return
 
     def _train_development_fold(

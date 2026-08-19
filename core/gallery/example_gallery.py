@@ -2,7 +2,6 @@
 
 import hashlib
 import pickle
-import shutil
 from dataclasses import fields, is_dataclass
 from pathlib import Path
 from pprint import pformat
@@ -19,44 +18,80 @@ from ..data_pipeline.intermediary import Example
 
 FEATURE_COLORMAP = "magma"
 GALLERY_DIRECTORY = Path("outputs/gallery")
-CACHE_DIRECTORY = Path("outputs/cache")
 
 
-def save_gallery(
-    examples:list[Example],
-    data_pipeline_config:DataPipelineConfig,
-    experiment_id:str,
-    random_seed:int|None=None,
-    num_examples:int=10,
-    class_names:dict[int, str]|None=None,
-    x_axis_label:str="Frame",
-    y_axis_label:str="Feature bin",
-    colorbar_label:str="Value",
-) -> Path:
-    gallery_dir = GALLERY_DIRECTORY / experiment_id
-    gallery_dir.mkdir(parents=True, exist_ok=True)
+class ExampleGalleryGenerator:
 
-    save_data_pipeline_config(data_pipeline_config, gallery_dir / "data_pipeline_config.txt")
+    def __init__(
+        self,
+        data_pipeline_config:DataPipelineConfig,
+        gallery_directory:Path=GALLERY_DIRECTORY,
+        num_examples:int=10,
+        random_seed:int|None=None,
+        class_names:dict[int, str]|None=None,
+        x_axis_label:str="Frame",
+        y_axis_label:str="Feature bin",
+        colorbar_label:str="Value",
+    ) -> None:
+        self.data_pipeline_config = data_pipeline_config
+        self.gallery_directory = gallery_directory
+        self.num_examples = num_examples
+        self.random_seed = random_seed
+        self.class_names = class_names
+        self.x_axis_label = x_axis_label
+        self.y_axis_label = y_axis_label
+        self.colorbar_label = colorbar_label
+        return
 
-    cache_hash = _compute_cache_hash(data_pipeline_config, random_seed)
-    cache_path = CACHE_DIRECTORY / f"{cache_hash}.pdf"
-    local_path = gallery_dir / "examples.pdf"
+    def generate(self, examples:list[Example]) -> Path:
+        gallery_dir = self._gallery_directory()
+        gallery_dir.mkdir(parents=True, exist_ok=True)
 
-    if not cache_path.exists():
-        CACHE_DIRECTORY.mkdir(parents=True, exist_ok=True)
-        save_examples_pdf(
-            examples=examples,
-            path=cache_path,
-            num_examples=num_examples,
-            seed=random_seed,
-            class_names=class_names,
-            x_axis_label=x_axis_label,
-            y_axis_label=y_axis_label,
-            colorbar_label=colorbar_label,
+        save_data_pipeline_config(
+            self.data_pipeline_config,
+            gallery_dir / "data_pipeline_config.txt",
         )
 
-    shutil.copy2(cache_path, local_path)
-    return local_path
+        pdf_path = gallery_dir / "examples.pdf"
+        save_examples_pdf(
+            examples=examples,
+            path=pdf_path,
+            num_examples=self.num_examples,
+            seed=self.random_seed,
+            class_names=self.class_names,
+            x_axis_label=self.x_axis_label,
+            y_axis_label=self.y_axis_label,
+            colorbar_label=self.colorbar_label,
+        )
+        return pdf_path
+
+    def save_config_text(self, path:Path) -> None:
+        save_data_pipeline_config(self.data_pipeline_config, path)
+        return
+
+    def _gallery_directory(self) -> Path:
+        config_hash = _compute_cache_hash(self.data_pipeline_config, None)
+        name = self.data_pipeline_config.name
+
+        if name is not None:
+            base = f"{name}_{config_hash}"
+        else:
+            base = config_hash
+
+        candidate = self.gallery_directory / base
+        if not candidate.exists():
+            return candidate
+
+        existing_hash = candidate.name.removeprefix(f"{name}_") if name is not None else candidate.name
+        if existing_hash == config_hash:
+            return candidate
+
+        suffix = 1
+        while True:
+            candidate = self.gallery_directory / f"{base}_{suffix}"
+            if not candidate.exists():
+                return candidate
+            suffix += 1
 
 
 def save_data_pipeline_config(

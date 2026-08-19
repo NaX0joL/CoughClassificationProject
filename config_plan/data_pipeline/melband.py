@@ -5,6 +5,7 @@ from core.data_pipeline.stratifier import DataSplitter
 
 
 melband_data_pipeline_config = DataPipelineConfig(
+    name="mel_band",
     source_reader=ElderlyCoughAudioSourceReader(),
     segmenter=CoughSegmenter(
         kept_metadata_key=["patient_id", "cough_audio"],

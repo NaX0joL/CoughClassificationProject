@@ -111,7 +111,9 @@ CoughClassificationProject/
 │
 ├── config_plan/                            # Pre-built config instances
 │
-├── scripts/                                # Standalone execution scripts
+├── scripts/
+│   ├── training/                           # Standalone training scripts & orchestrator
+│   └── analysis/                           # EDA, visualization, metrics recomputation
 │
 ├── tests/                                  # Pytest suite
 │
@@ -138,9 +140,9 @@ uv run python main.py
 ## Running Experiments
 
 - `main.py` — default experiment
-- `scripts/train_*.py` — individual data-pipeline × model combos
-- `scripts/scripts_orchestrator.py` — batch run queued scripts
-- `scripts/recompute_mpkg_metrics.py` — re-evaluate saved model packages
+- `scripts/training/train_*.py` — individual data-pipeline × model combos
+- `scripts/training/scripts_orchestrator.py` — batch run queued scripts
+- `scripts/analysis/recompute_mpkg_metrics.py` — re-evaluate saved model packages
 
 ## Dataset
 
