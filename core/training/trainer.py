@@ -35,7 +35,7 @@ class Trainer:
         train_loader = self._dataset_to_dataloader(self.train_dataset, shuffle=True)
         validation_loader = self._dataset_to_dataloader(self.validation_dataset, shuffle=False)
         
-        criterion = build_criterion(self.config).to(self.device)
+        criterion = build_criterion(self.config, self.train_dataset).to(self.device)
         optimizer = build_optimizer(self.config, self.model)
         checkpoint = BestModelCheckpoint()
         
@@ -48,6 +48,7 @@ class Trainer:
             validation_loader=validation_loader,
             checkpoint=checkpoint,
             load_best_model=self.config.load_best_model,
+            early_stopping_patience=self.config.early_stopping_patience,
         )
         return loss_log
     
@@ -75,12 +76,42 @@ class Trainer:
 
 
 
-def build_criterion(config:TrainingConfig) -> nn.Module:
+def build_criterion(
+    config:TrainingConfig,
+    train_dataset:ExampleDataset,
+) -> nn.Module:
     
     if config.criterion_name == "cross_entropy":
-        return nn.CrossEntropyLoss()
+        class_weights = _build_class_weights(config, train_dataset)
+        return nn.CrossEntropyLoss(weight=class_weights)
     
     raise ValueError(f"unsupported criterion, got: {config.criterion_name}")
+
+
+def _build_class_weights(
+    config:TrainingConfig,
+    train_dataset:ExampleDataset,
+) -> Tensor|None:
+    
+    if config.class_weighting == "none":
+        return None
+
+    if config.class_weighting == "balanced":
+        labels = torch.tensor(
+            [example.label for example in train_dataset.examples],
+            dtype=torch.long,
+        )
+        class_counts = torch.bincount(labels, minlength=2)
+        if len(class_counts) != 2 or torch.any(class_counts == 0):
+            raise ValueError(
+                "balanced class weighting requires both binary classes "
+                "in the training dataset"
+            )
+
+        total_examples = len(train_dataset.examples)
+        return total_examples / (2 * class_counts.float())
+
+    raise ValueError(f"unsupported class weighting, got: {config.class_weighting}")
 
 
 def build_optimizer(config:TrainingConfig, model:FullModel) -> Optimizer:

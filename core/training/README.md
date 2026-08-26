@@ -64,7 +64,7 @@ loss_log = Trainer(
 
 - `num_epochs=100`, `criterion_name="cross_entropy"` (only supported value)
 - `optimizer_name="adamw"` (`"adam"` or `"adamw"`), `learning_rate=0.0001`, `weight_decay=0.001`
-- `batch_size=32`, `num_workers=1`, `drop_last=False`
+- `batch_size=32`, `num_workers=0`, `drop_last=False`
 - `random_seed=42`, `load_best_model=True`
 
 Pre-built variants: `config_plan/training/` (`default_training_config`,

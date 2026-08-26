@@ -10,7 +10,7 @@ from .model import FullModel
 from .training import LossLog, Trainer
 from .metrics import ModelEvaluator
 from .persistence import ExperimentPersistence
-from .gallery import ExampleGalleryGenerator
+from .gallery import ClassDistributionGenerator, ExampleGalleryGenerator
 
 
 
@@ -102,8 +102,14 @@ class ExperimentOrchestrator:
             data_pipeline_config=self.config.data_pipeline_config,
             random_seed=self.config.training_config.random_seed,
             num_examples=50,
+            regenerate=True,
         )
         gallery.generate(data_pipeline.get_examples())
+
+        distribution_generator = ClassDistributionGenerator(
+            data_pipeline_config=self.config.data_pipeline_config,
+        )
+        distribution_generator.generate(data_split)
 
         model_evaluator = ModelEvaluator(self.config.metrics_config)
 

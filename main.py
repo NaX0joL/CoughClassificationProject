@@ -25,7 +25,7 @@ from config_plan import (
 def main():
     
     exp_config = ExperimentConfig(
-        data_pipeline_config=raw_downsampled_sliding_window_data_pipeline_config,
+        data_pipeline_config=mfcc_sliding_window_data_pipeline_config,
         model_config=mlp_config,
         training_config=default_training_config,
         metrics_config=default_metrics_config,
@@ -38,8 +38,8 @@ def main():
     )
     exp.train_model()
     
-    load_path = Path("outputs/mpkg/tmp/test_run")
-    exp.load(mpkg_path=load_path)
+    path = exp.run_directory if exp.run_directory is not None else Path("")
+    exp.load(mpkg_path=path)
     
     return
 

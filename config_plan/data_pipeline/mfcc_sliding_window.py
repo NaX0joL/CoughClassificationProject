@@ -10,18 +10,18 @@ mfcc_sliding_window_data_pipeline_config = DataPipelineConfig(
     source_reader=ElderlyCoughAudioSourceReader(),
     segmenter=SlidingWindowSegmenter(
         window_size=8200,
-        stride=1025,
-        overlap_threshold=0.5,
+        stride=4100,
+        overlap_threshold=0.7,
         negative_label=0,
         keep_short_segments=False,
         kept_metadata_key=["patient_id", "cough_audio"],
     ),
     transformer=MFCC(
         sample_rate=16_000,
-        n_fft=400,
+        n_fft=512,              # 512, 1024
         win_length=400,
-        hop_length=160,
-        n_mels=40,
+        hop_length=200,
+        n_mels=64,              # 64, 128
         n_mfcc=40,
     ),
     padder=None,

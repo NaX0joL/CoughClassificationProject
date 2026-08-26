@@ -14,6 +14,8 @@ from train_melband_lenet import main as melband_lenet
 from train_melband_patchtst import main as melband_patchtst
 from train_melband_transformer import main as melband_transformer
 
+from train_mfcc_sliding_window_mlp import main as mfcc_sliding_window_mlp
+
 
 
 def main():
@@ -22,17 +24,21 @@ def main():
         # mfcc_mlp,
         # mfcc_lenet,
         # mfcc_patchtst,
-        mfcc_transformer,
+        # mfcc_transformer,
+        
         # melband_mlp,
         # melband_lenet,
         # melband_patchtst,
-        melband_transformer,
+        # melband_transformer,
+        
+        mfcc_sliding_window_mlp,
     ]
     for script in script_queue:
         script()
         print()
     
     return
+
 
 
 if __name__ == "__main__":

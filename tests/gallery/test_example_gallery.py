@@ -14,6 +14,7 @@ from core.gallery.example_gallery import (
     ExampleGalleryGenerator,
     save_data_pipeline_config,
     save_examples_pdf,
+    _select_example_indices,
     _compute_cache_hash,
 )
 
@@ -24,6 +25,12 @@ def _make_example(length:int=100, n_features:int=10, label:int=0) -> Example:
         label=label,
         metadata={"patient_id": "p1"},
     )
+
+
+def _make_patient_example(patient_id:str, label:int) -> Example:
+    example = _make_example(label=label)
+    example.metadata["patient_id"] = patient_id
+    return example
 
 
 def _make_config() -> DataPipelineConfig:
@@ -107,6 +114,41 @@ class TestSaveExamplesPdf:
 
         assert len(indices) == 1
         assert path.exists()
+
+    def test_sampling_is_balanced_between_labels(self) -> None:
+        examples = (
+            [_make_patient_example(f"negative_{i}", label=0) for i in range(10)]
+            + [_make_patient_example(f"positive_{i}", label=1) for i in range(3)]
+        )
+
+        indices = _select_example_indices(
+            examples,
+            sample_count=6,
+            rng=np.random.default_rng(42),
+        )
+        labels = [examples[index].label for index in indices]
+
+        assert labels.count(0) == 3
+        assert labels.count(1) == 3
+
+    def test_sampling_prefers_different_patients(self) -> None:
+        examples = [
+            _make_patient_example("p0", label=0),
+            _make_patient_example("p0", label=0),
+            _make_patient_example("p1", label=0),
+            _make_patient_example("p1", label=0),
+            _make_patient_example("p2", label=0),
+            _make_patient_example("p2", label=0),
+        ]
+
+        indices = _select_example_indices(
+            examples,
+            sample_count=3,
+            rng=np.random.default_rng(42),
+        )
+        patient_ids = [examples[index].metadata["patient_id"] for index in indices]
+
+        assert len(set(patient_ids)) == 3
 
 
 class TestComputeCacheHash:

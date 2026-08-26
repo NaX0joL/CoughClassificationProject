@@ -6,7 +6,8 @@ from core.model.behavior.classification_behavior import ClassificationBehavior
 
 mlp_config = ModelConfig(
     architecture=MLP(
-        linear_dims=[512, 256, 256],
+        linear_dims=[512, 256, 128],
+        dropout=0.3,
         output_dim=2,
     ),
     behavior=ClassificationBehavior(),

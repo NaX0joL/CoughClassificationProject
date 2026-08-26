@@ -10,6 +10,7 @@ from modules.resolve_pytorch_device import get_model_device
 
 from ..model.full_model import FullModel
 from .checkpoint import BestModelCheckpoint
+from .early_stopping import EarlyStopping
 from .train_display import TrainDisplay
 
 
@@ -36,12 +37,14 @@ def do_train_logic(
     validation_loader: DataLoader,
     checkpoint:BestModelCheckpoint|None=None,
     load_best_model:bool=True,
+    early_stopping_patience:int|None=None,
 ) -> LossLog:
     loss_log = LossLog(
         training_losses=[],
         validation_losses=[],
     )
     train_display = TrainDisplay(number_of_epochs=epochs)
+    early_stopping = _create_early_stopping(early_stopping_patience)
 
     try:
         for epoch in range(1, epochs + 1):
@@ -62,11 +65,14 @@ def do_train_logic(
 
             loss_log.training_losses.append(training_loss)
             loss_log.validation_losses.append(validation_loss)
+            train_display.update(training_loss, validation_loss)
 
             if checkpoint is not None:
                 checkpoint.update(model, validation_loss, epoch)
-            
-            train_display.update(training_loss, validation_loss)
+
+            if early_stopping is not None and early_stopping.update(validation_loss):
+                print(f"early stopping at epoch {epoch}")
+                break
 
     finally:
         train_display.close()
@@ -78,6 +84,14 @@ def do_train_logic(
         loss_log.best_epoch = checkpoint.best_epoch
 
     return loss_log
+
+
+def _create_early_stopping(
+    patience:int|None,
+) -> EarlyStopping|None:
+    if patience is None:
+        return None
+    return EarlyStopping(patience=patience)
 
 
 def _epoch_logic(

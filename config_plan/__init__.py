@@ -24,6 +24,8 @@ from .persistence import (
     melband_legrad_persistence_config,
     mfcc_gradcam_persistence_config,
     mfcc_legrad_persistence_config,
+    mfcc_persistence_config,
+    melband_persistence_config,
 )
 
 from .training.default_training import default_training_config

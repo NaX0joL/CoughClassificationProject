@@ -1,11 +1,13 @@
 
 
-import hashlib
-import json
 from dataclasses import fields, is_dataclass
 from pathlib import Path
 from pprint import pformat
 from typing import Any
+
+import matplotlib
+
+matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,10 +16,15 @@ from matplotlib.colors import TwoSlopeNorm
 
 from ..data_pipeline.data_pipeline_config import DataPipelineConfig
 from ..data_pipeline.intermediary import Example
+from .gallery_directory import (
+    GALLERY_DIRECTORY,
+    compute_config_hash as _compute_cache_hash,
+    resolve_gallery_directory,
+)
 
 
 FEATURE_COLORMAP = "magma"
-GALLERY_DIRECTORY = Path("outputs/gallery")
+PATIENT_ID_METADATA_KEY = "patient_id"
 
 
 class ExampleGalleryGenerator:
@@ -76,28 +83,10 @@ class ExampleGalleryGenerator:
         return
 
     def _gallery_directory(self) -> Path:
-        config_hash = _compute_cache_hash(self.data_pipeline_config, None)
-        name = self.data_pipeline_config.name
-
-        if name is not None:
-            base = f"{name}_{config_hash}"
-        else:
-            base = config_hash
-
-        candidate = self.gallery_directory / base
-        if not candidate.exists():
-            return candidate
-
-        existing_hash = candidate.name.removeprefix(f"{name}_") if name is not None else candidate.name
-        if existing_hash == config_hash:
-            return candidate
-
-        suffix = 1
-        while True:
-            candidate = self.gallery_directory / f"{base}_{suffix}"
-            if not candidate.exists():
-                return candidate
-            suffix += 1
+        return resolve_gallery_directory(
+            self.data_pipeline_config,
+            self.gallery_directory,
+        )
 
 
 def save_data_pipeline_config(
@@ -127,7 +116,7 @@ def save_examples_pdf(
 
     rng = np.random.default_rng(seed)
     sample_count = min(len(examples), num_examples)
-    indices = rng.choice(len(examples), size=sample_count, replace=False)
+    indices = _select_example_indices(examples, sample_count, rng)
     selected = [examples[i] for i in indices]
 
     color_limit = _compute_color_limit(selected)
@@ -147,51 +136,75 @@ def save_examples_pdf(
     return indices.tolist()
 
 
-def _extract_init_params(component:Any) -> dict[str, Any]|None:
-    if component is None:
-        return None
-    return {
-        name: value
-        for name, value in vars(component).items()
-        if _is_hashable_primitive(value)
-    }
+def _select_example_indices(
+    examples:list[Example],
+    sample_count:int,
+    rng:np.random.Generator,
+) -> np.ndarray:
+    labels = sorted({example.label for example in examples})
+    selected_indices = []
+
+    for position, label in enumerate(labels):
+        target_count = sample_count // len(labels)
+        if position < sample_count % len(labels):
+            target_count += 1
+
+        label_indices = [
+            index
+            for index, example in enumerate(examples)
+            if example.label == label
+        ]
+        target_count = min(target_count, len(label_indices))
+        selected_indices.extend(
+            _select_label_indices(label_indices, examples, target_count, rng)
+        )
+
+    remaining_count = sample_count - len(selected_indices)
+    if remaining_count > 0:
+        remaining_indices = np.setdiff1d(
+            np.arange(len(examples)),
+            selected_indices,
+        )
+        selected_indices.extend(
+            rng.choice(remaining_indices, size=remaining_count, replace=False)
+        )
+
+    return np.array(selected_indices, dtype=int)
 
 
-def _extract_transformer_params(
-    transformer:Any|list[Any]|None,
-) -> Any:
-    if transformer is None:
-        return None
-    if isinstance(transformer, list):
-        return [_extract_init_params(t) for t in transformer]
-    return _extract_init_params(transformer)
+def _select_label_indices(
+    label_indices:list[int],
+    examples:list[Example],
+    target_count:int,
+    rng:np.random.Generator,
+) -> list[int]:
+    indices_by_patient:dict[str, list[int]] = {}
+    for index in label_indices:
+        patient_id = str(
+            examples[index].metadata.get(PATIENT_ID_METADATA_KEY, index)
+        )
+        indices_by_patient.setdefault(patient_id, []).append(index)
 
+    patient_ids = list(indices_by_patient)
+    selected_indices = []
+    for patient_id in rng.permutation(patient_ids):
+        patient_indices = indices_by_patient[patient_id]
+        selected_indices.append(int(rng.choice(patient_indices)))
+        if len(selected_indices) == target_count:
+            return selected_indices
 
-def _is_hashable_primitive(value:Any) -> bool:
-    if isinstance(value, (str, int, float, bool, type(None))):
-        return True
-    if isinstance(value, Path):
-        return True
-    if isinstance(value, (list, tuple)):
-        return all(_is_hashable_primitive(item) for item in value)
-    return False
+    remaining_indices = [
+        index
+        for index in label_indices
+        if index not in selected_indices
+    ]
+    remaining_count = target_count - len(selected_indices)
+    if remaining_count > 0:
+        selected_indices.extend(
+            rng.choice(remaining_indices, size=remaining_count, replace=False)
+        )
 
-
-def _compute_cache_hash(
-    config:DataPipelineConfig,
-    random_seed:int|None,
-) -> str:
-    representation = {
-        "name": config.name,
-        "source_reader": _extract_init_params(config.source_reader),
-        "segmenter": _extract_init_params(config.segmenter),
-        "transformer": _extract_transformer_params(config.transformer),
-        "padder": _extract_init_params(config.padder),
-        "splitter": _extract_init_params(config.splitter),
-        "seed": random_seed,
-    }
-    data = json.dumps(representation, sort_keys=True, default=str).encode()
-    return hashlib.sha256(data).hexdigest()[:12]
+    return selected_indices
 
 
 def _compute_color_limit(examples:list[Example]) -> float:
