@@ -70,16 +70,18 @@ def do_train_logic(
             if checkpoint is not None:
                 checkpoint.update(model, validation_loss, epoch)
 
-            if early_stopping is not None and early_stopping.update(validation_loss):
-                print(f"early stopping at epoch {epoch}")
-                break
+            if early_stopping is not None:
+                if early_stopping.update(validation_loss):
+                    break
 
     finally:
         train_display.close()
 
     if checkpoint is not None:
+        
         if load_best_model:
             checkpoint.load_best_model(model)
+            
         loss_log.best_validation_loss = checkpoint.best_validation_loss
         loss_log.best_epoch = checkpoint.best_epoch
 

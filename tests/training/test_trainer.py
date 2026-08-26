@@ -9,6 +9,7 @@ from core.training.training_config import TrainingConfig
 
 def _make_config(class_weighting:str="none") -> TrainingConfig:
     return TrainingConfig(
+        random_seed=42,
         num_epochs=1,
         criterion_name="cross_entropy",
         optimizer_name="adamw",

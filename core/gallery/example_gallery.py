@@ -23,7 +23,7 @@ from .gallery_directory import (
 )
 
 
-FEATURE_COLORMAP = "magma"
+FEATURE_COLORMAP = "plasma"
 PATIENT_ID_METADATA_KEY = "patient_id"
 
 

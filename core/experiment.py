@@ -102,7 +102,7 @@ class ExperimentOrchestrator:
             data_pipeline_config=self.config.data_pipeline_config,
             random_seed=self.config.training_config.random_seed,
             num_examples=50,
-            regenerate=True,
+            regenerate=False,
         )
         gallery.generate(data_pipeline.get_examples())
 
@@ -117,7 +117,7 @@ class ExperimentOrchestrator:
         folds_metrics = []
 
         for fold_index, development_fold in enumerate(data_split.development_folds, start=1):
-
+            
             model = FullModel.create(self.config.model_config).to(self.device)
             loss_log = self._train_development_fold(model, development_fold)
             

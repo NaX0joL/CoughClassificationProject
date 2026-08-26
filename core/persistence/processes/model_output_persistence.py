@@ -15,7 +15,7 @@ from ...model import FullModel
 from ..persistence_config import PersistenceConfig
 
 
-FEATURE_COLORMAP = "magma"
+FEATURE_COLORMAP = "plasma"
 
 
 def save_model_output_pdfs(

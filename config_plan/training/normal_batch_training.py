@@ -15,7 +15,7 @@ normal_batch_training_config = TrainingConfig(
     batch_size=16,
     num_workers=0,
     drop_last=False,
-    early_stopping_patience=10,
+    early_stopping_patience=None,
     
     load_best_model=True,
 )
