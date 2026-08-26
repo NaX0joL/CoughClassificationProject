@@ -6,6 +6,10 @@ outputs/
 data/
 tmp_trash/
 
+# misc modules
+modules/
+
+
 # opencode related
 AGENTS.md
 opencode.json
