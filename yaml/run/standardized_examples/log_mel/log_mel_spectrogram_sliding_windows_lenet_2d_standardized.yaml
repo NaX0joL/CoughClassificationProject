@@ -1,4 +1,4 @@
-experiment_id: log_mel_spectrogram_sliding_windows_lenet_1d_standardized
+experiment_id: log_mel_spectrogram_sliding_windows_lenet_2d_standardized
 
 config:
     type: ExperimentConfig
@@ -41,14 +41,14 @@ config:
     model_config:
         type: ModelConfig
         architecture:
-            type: LeNet1D
+            type: LeNet2D
             conv_channels:
                 - 32
                 - 64
                 - 128
             linear_dims:
                 - 256
-                - 128
+                - 256
             dropout: 0.3
             output_dim: 2
         behavior:
@@ -93,5 +93,5 @@ config:
         x_axis_label: Frame
         y_axis_label: Mel band
         colorbar_label: Log-mel energy
-        include_grad_cam: true
+        include_grad_cam: false
         include_legrad: false

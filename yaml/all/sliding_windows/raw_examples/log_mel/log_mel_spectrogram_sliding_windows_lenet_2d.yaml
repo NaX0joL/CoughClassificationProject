@@ -1,11 +1,11 @@
-experiment_id: mfcc_sliding_windows_transformer_standardized
+experiment_id: log_mel_spectrogram_sliding_windows_lenet_2d
 
 config:
     type: ExperimentConfig
 
     data_pipeline_config:
         type: DataPipelineConfig
-        name: mfcc_sliding_windows
+        name: log_mel_spectrogram_sliding_windows
         source_reader:
             type: ElderlyCoughAudioSourceReader
             root_path:
@@ -22,14 +22,13 @@ config:
                 - patient_id
                 - cough_audio
         transformer:
-            - type: MFCC
-              sample_rate: 16000
-              n_fft: 512
-              win_length: 400
-              hop_length: 160
-              n_mels: 40
-              n_mfcc: 40
-            - type: FeatureWiseStandardization
+            type: LogMelSpectrogram
+            sample_rate: 16000
+            n_fft: 512
+            win_length: 400
+            hop_length: 160
+            n_mels: 40
+            log_offset: 0.000001
         padder: null
         splitter:
             type: DataSplitter
@@ -41,57 +40,16 @@ config:
     model_config:
         type: ModelConfig
         architecture:
-            type: PatchTST
-
-            seq_len: 52
-            pred_len: 2
-            patch_len: 1
-            stride: 1
-            enc_in_feature: 40
-
-            e_layers_num: 3
-            n_heads_num: 4
-
-            d_model: 128
-            d_ff: 256
-
+            type: LeNet2D
+            conv_channels:
+                - 32
+                - 64
+                - 128
+            linear_dims:
+                - 256
+                - 256
             dropout: 0.3
-            fc_dropout: 0.2
-            head_dropout: 0.2
-            attn_dropout: 0.1
-
-            use_pre_norm: false
-            max_seq_len: 1024
-            d_k: null
-            d_v: null
-            norm: BatchNorm
-            act: gelu
-            key_padding_mask: auto
-            padding_var: null
-            attention_mask: null
-            res_attention: true
-            store_attn: true
-            pe: zeros
-            learn_pe: true
-            pretrain_head: false
-            head_type: flatten
-            individual: false
-            padding_patch: null
-            use_revin: false
-            use_affine: false
-            use_subtract_last: false
-            decomposition: false
-            kernel_size: 25
-            bottleneck_dim: 128
-
-            n_normal_heads: 0
-            n_mp_attn_heads: 0
-            qk_weight_share: false
-            attention_output_scaling: 1.0
-
-            use_positional_encoding: true
-            verbose: false
-            
+            output_dim: 2
         behavior:
             type: ClassificationBehavior
 
@@ -132,7 +90,7 @@ config:
         feature_color_percentile: 99.0
         feature_colormap: inferno
         x_axis_label: Frame
-        y_axis_label: MFCC coefficient
-        colorbar_label: MFCC value
+        y_axis_label: Mel band
+        colorbar_label: Log-mel energy
         include_grad_cam: false
-        include_legrad: true
+        include_legrad: false

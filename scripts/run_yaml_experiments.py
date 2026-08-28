@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from modules.email_notification.email_sender import send_email
+from modules.email_notification import send_email
 
 
 
@@ -158,6 +158,8 @@ class YamlExperimentRunner:
         )
         send_email(subject, run_summary)
         return
+
+
 
 def get_arguments():
     parser = argparse.ArgumentParser()

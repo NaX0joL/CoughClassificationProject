@@ -47,7 +47,7 @@ config:
             patch_len: 1
             stride: 1
             enc_in_feature: 40
-            e_layers_num: 3
+            e_layers_num: 2
             n_heads_num: 4
             d_model: 128
             d_ff: 256
