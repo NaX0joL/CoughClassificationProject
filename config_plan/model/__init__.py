@@ -1,4 +1,4 @@
-from .lenet import lenet_config
+from .lenet_1d import lenet_1d_config
 from .mlp import mlp_config
 from .patchtst import patchtst_config
 from .transformer import transformer_config
@@ -6,7 +6,7 @@ from .resnet import resnet_config
 
 
 __all__ = [
-    "lenet_config",        
+    "lenet_1d_config",
     "mlp_config", 
     "patchtst_config", 
     "resnet_config"

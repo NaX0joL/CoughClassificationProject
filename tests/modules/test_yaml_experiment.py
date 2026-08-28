@@ -7,7 +7,8 @@ import pytest
 from core.data_pipeline.preprocessing import LogMelSpectrogram, MFCC
 from core.experiment import ExperimentOrchestrator
 from core.metrics import MetricsConfig
-from core.model.architectures.LeNet import LeNet
+from core.model.architectures.LeNet1D import LeNet1D
+from core.model.architectures.LeNet2D import LeNet2D
 from core.model.architectures.MLP import MLP
 from core.model.architectures.PatchTST import PatchTST
 from modules.yaml_experiment import (
@@ -22,7 +23,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SAMPLE_YAML_PATH = (
     PROJECT_ROOT
     / "yaml"
-    / "all"
+    / "run"
     / "mfcc_sliding_windows_transformer.yaml"
 )
 
@@ -37,7 +38,7 @@ def test_converter_builds_complete_sample() -> None:
     assert experiment.config.data_pipeline_config.segmenter.stride == 4100
     assert isinstance(experiment.config.data_pipeline_config.transformer, MFCC)
     assert experiment.config.data_pipeline_config.padder is None
-    assert experiment.config.model_config.architecture.seq_len == 42
+    assert experiment.config.model_config.architecture.seq_len == 52
     assert isinstance(experiment.config.metrics_config, MetricsConfig)
     assert isinstance(experiment.config.metrics_config.metrics, tuple)
     assert len(experiment.config.metrics_config.metrics) == 11
@@ -51,8 +52,8 @@ def test_converter_builds_complete_sample() -> None:
         "include_grad_cam",
     ),
     [
-        ("all/mfcc_sliding_windows_mlp.yaml", MFCC, MLP, False),
-        ("all/mfcc_sliding_windows_lenet.yaml", MFCC, LeNet, True),
+        ("run/mfcc_sliding_windows_mlp.yaml", MFCC, MLP, False),
+        ("run/mfcc_sliding_windows_lenet_1d.yaml", MFCC, LeNet1D, True),
         (
             "run/log_mel_spectrogram_sliding_windows_mlp.yaml",
             LogMelSpectrogram,
@@ -60,10 +61,17 @@ def test_converter_builds_complete_sample() -> None:
             False,
         ),
         (
-            "run/log_mel_spectrogram_sliding_windows_lenet.yaml",
+            "run/log_mel_spectrogram_sliding_windows_lenet_1d.yaml",
             LogMelSpectrogram,
-            LeNet,
+            LeNet1D,
             True,
+        ),
+        ("run/mfcc_sliding_windows_lenet_2d.yaml", MFCC, LeNet2D, False),
+        (
+            "run/log_mel_spectrogram_sliding_windows_lenet_2d.yaml",
+            LogMelSpectrogram,
+            LeNet2D,
+            False,
         ),
         (
             "run/log_mel_spectrogram_sliding_windows_transformer.yaml",
@@ -103,12 +111,12 @@ def test_converter_builds_additional_architecture_samples(
 @pytest.mark.parametrize(
     "yaml_name",
     [
-        "mfcc_sliding_windows_mlp_dummy.yaml",
-        "mfcc_sliding_windows_lenet_dummy.yaml",
+        "dummy/mfcc_sliding_windows_mlp_dummy.yaml",
+        "dummy/mfcc_sliding_windows_lenet_1d_dummy.yaml",
         "dummy/mfcc_sliding_windows_transformer_dummy.yaml",
-        "log_mel_spectrogram_sliding_windows_mlp_dummy.yaml",
-        "log_mel_spectrogram_sliding_windows_lenet_dummy.yaml",
-        "log_mel_spectrogram_sliding_windows_transformer_dummy.yaml",
+        "dummy/log_mel_spectrogram_sliding_windows_mlp_dummy.yaml",
+        "dummy/log_mel_spectrogram_sliding_windows_lenet_1d_dummy.yaml",
+        "dummy/log_mel_spectrogram_sliding_windows_transformer_dummy.yaml",
     ],
 )
 def test_converter_builds_two_epoch_dummy_samples(yaml_name:str) -> None:
@@ -132,6 +140,23 @@ def test_converter_builds_paths_lists_and_nulls(tmp_path:Path) -> None:
     assert isinstance(pipeline_config.transformer[0], MFCC)
     assert isinstance(pipeline_config.transformer[1], LogMelSpectrogram)
     assert pipeline_config.padder is None
+
+
+def test_converter_builds_lenet_2d_architecture(tmp_path:Path) -> None:
+    yaml_path = tmp_path / "experiment.yaml"
+    yaml_path.write_text(
+        _create_lenet_2d_yaml(),
+        encoding="utf-8",
+    )
+
+    experiment = YamlToExperimentConverter().convert(yaml_path)
+    architecture = experiment.config.model_config.architecture
+
+    assert isinstance(architecture, LeNet2D)
+    assert architecture.conv_channels == [4, 8]
+    assert architecture.linear_dims == [16]
+    assert architecture.dropout == 0.3
+    assert architecture.output_dim == 2
 
 
 @pytest.mark.parametrize(
@@ -199,6 +224,29 @@ def test_main_converts_and_trains_experiment(
     main()
 
     experiment.train_model.assert_called_once_with()
+
+
+def _create_lenet_2d_yaml() -> str:
+    mlp_architecture = """\
+    architecture:
+      type: MLP
+      linear_dims: [8]
+      dropout: 0.1
+      output_dim: 2
+"""
+    lenet_2d_architecture = """\
+    architecture:
+      type: LeNet2D
+      conv_channels: [4, 8]
+      linear_dims: [16]
+      dropout: 0.3
+      output_dim: 2
+"""
+    yaml_text = _create_list_transformer_yaml().replace(
+        mlp_architecture,
+        lenet_2d_architecture,
+    )
+    return yaml_text
 
 
 def _create_list_transformer_yaml() -> str:

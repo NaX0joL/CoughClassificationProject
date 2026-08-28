@@ -75,7 +75,7 @@ class YamlExperimentRunner:
         yaml_directory:Path,
     ) -> None:
         relative_path = yaml_path.relative_to(yaml_directory)
-        print(f"\nRunning {relative_path}")
+        print(f"\n> Running {relative_path}")
         return
 
     def _run_yaml_file(self, yaml_path:Path) -> int:

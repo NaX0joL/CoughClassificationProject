@@ -1,4 +1,4 @@
-experiment_id: mfcc_sliding_windows_lenet
+experiment_id: mfcc_sliding_windows_lenet_2d
 
 config:
     type: ExperimentConfig
@@ -41,7 +41,7 @@ config:
         type: ModelConfig
 
         architecture:
-            type: LeNet
+            type: LeNet2D
             conv_channels:
                 - 32
                 - 64
@@ -94,5 +94,5 @@ config:
         x_axis_label: Frame
         y_axis_label: MFCC coefficient
         colorbar_label: MFCC value
-        include_grad_cam: true
+        include_grad_cam: false
         include_legrad: false

@@ -8,6 +8,10 @@ from ..intermediary import Example
 
 
 
+SCALING_EPSILON = 1e-8
+
+
+
 class MFCC(Transformer):
 
     def __init__(
@@ -133,6 +137,89 @@ class LogMelSpectrogram(Transformer):
         mel_bands = self.transformer(waveform)
         log_mel_bands = torch.log(mel_bands + self.log_offset)
         return log_mel_bands.transpose(0, 1).numpy()
+
+
+
+class FeatureWiseStandardization(Transformer):
+
+    def transform(self, examples:list[Example]) -> list[Example]:
+        standardized_examples = self._standardize_examples(examples)
+        return standardized_examples
+
+    def _standardize_examples(
+        self,
+        examples:list[Example],
+    ) -> list[Example]:
+        standardized_examples = []
+
+        for example in examples:
+            standardized_example = Example(
+                value=self._standardize_value(example.value),
+                label=example.label,
+                metadata=example.metadata,
+            )
+            standardized_examples.append(standardized_example)
+
+        return standardized_examples
+
+    @staticmethod
+    def _standardize_value(value:np.ndarray) -> np.ndarray:
+        if value.size == 0:
+            raise ValueError(
+                "FeatureWiseStandardization requires at least one value"
+            )
+
+        feature_means = value.mean(axis=0, keepdims=True)
+        feature_standard_deviations = value.std(axis=0, keepdims=True)
+        safe_standard_deviations = np.maximum(
+            feature_standard_deviations,
+            SCALING_EPSILON,
+        )
+        standardized_value = (
+            value - feature_means
+        ) / safe_standard_deviations
+        return standardized_value
+
+
+
+class FeatureWiseNormalization(Transformer):
+
+    def transform(self, examples:list[Example]) -> list[Example]:
+        normalized_examples = self._normalize_examples(examples)
+        return normalized_examples
+
+    def _normalize_examples(
+        self,
+        examples:list[Example],
+    ) -> list[Example]:
+        normalized_examples = []
+
+        for example in examples:
+            normalized_example = Example(
+                value=self._normalize_value(example.value),
+                label=example.label,
+                metadata=example.metadata,
+            )
+            normalized_examples.append(normalized_example)
+
+        return normalized_examples
+
+    @staticmethod
+    def _normalize_value(value:np.ndarray) -> np.ndarray:
+        if value.size == 0:
+            raise ValueError(
+                "FeatureWiseNormalization requires at least one value"
+            )
+
+        feature_minimums = value.min(axis=0, keepdims=True)
+        feature_ranges = (
+            value.max(axis=0, keepdims=True) - feature_minimums
+        )
+        safe_feature_ranges = np.maximum(feature_ranges, SCALING_EPSILON)
+        normalized_value = (
+            value - feature_minimums
+        ) / safe_feature_ranges
+        return normalized_value
 
 
 

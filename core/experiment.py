@@ -129,7 +129,7 @@ class ExperimentOrchestrator:
             )
             total_training_seconds += fold_training_seconds
             
-            print(f"time: {_format_elapsed_time(fold_training_seconds)}")
+            print(f" time: {_format_elapsed_time(fold_training_seconds)}")
             
             evaluation = model_evaluator.evaluate(
                 model,

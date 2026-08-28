@@ -23,7 +23,7 @@ core/persistence                  save/load fold state_dicts
 | `FullModel` | The single `nn.Module` used everywhere; composes `architecture` + `behavior` |
 | `ModelArchitecture`, `ModelBehavior`, `StepResult` | ABCs / result type that define the plug-in contract |
 | `ClassificationBehavior` | Multi-class semantics: softmax, argmax, external cross-entropy criterion |
-| `MLP`, `LeNet`, `ResNet`, `PatchTST` | Concrete architectures (+ their config dataclasses) |
+| `MLP`, `LeNet1D`, `LeNet2D`, `ResNet`, `PatchTST` | Concrete architectures (+ their config dataclasses) |
 | `ModelConfig` | Bundles an instantiated `architecture` + `behavior` |
 
 ## Core concepts
@@ -48,7 +48,8 @@ The data pipeline produces 2D per-sample feature matrices `[820, features]`
 | Architecture | View of input | First layer |
 |---|---|---|
 | `MLP` | flattened "bag of frames" (no temporal structure) | `Flatten` → `LazyLinear` |
-| `LeNet` | `[seq_len, features]`; feature bins = Conv1d channels | `LazyConv1d` + pooling |
+| `LeNet1D` | `[seq_len, features]`; feature bins = Conv1d channels | `LazyConv1d` + pooling |
+| `LeNet2D` | `[seq_len, features]`; single-channel time-feature image | `LazyConv2d` + pooling |
 | `ResNet` | `[seq_len, features]`; feature bins = Conv1d channels | stem `LazyConv1d` + residual stages |
 | `PatchTST` | `[seq_len, features]`; frames = token sequence | patching → encoder |
 
@@ -72,14 +73,14 @@ PatchTST is a time-series transformer adapted for classification:
 ## Usage
 
 Pre-built model configs live in `config_plan/model/` (`mlp_config`,
-`lenet_config`, `resnet_config`, `patchtst_config`, `transformer_config`). The
+`lenet_1d_config`, `resnet_config`, `patchtst_config`, `transformer_config`). The
 "transformer" experiment is PatchTST with `patch_len=1, stride=1` (one token per
 timestep). Each config pairs an architecture with `ClassificationBehavior()`.
 
 ## Key parameters
 
 - `ModelConfig.default()` → MLP with `linear_dims=[256, 256, 256]`, `output_dim=2`.
-- Per-architecture configs (`MLPConfig`, `LeNetConfig`, `ResNetConfig`,
+- Per-architecture configs (`MLPConfig`, `LeNet1DConfig`, `LeNet2DConfig`, `ResNetConfig`,
   `PatchTSTConfig`) hold architecture-specific fields; PatchTST also accepts flat
   kwargs (used by `config_plan`).
 
@@ -98,4 +99,5 @@ timestep). Each config pairs an architecture with `ClassificationBehavior()`.
 
 ## Tests
 
-No tests exist for `core/model/`.
+Focused architecture tests live in `tests/model/`, including separate coverage
+for `LeNet1D` and `LeNet2D`.

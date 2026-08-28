@@ -17,7 +17,7 @@ core/persistence/figures (model output PDFs)
 
 | Class | Role |
 |---|---|
-| `GradCam` | Gradient-weighted activations for Conv1d architectures (LeNet, ResNet) |
+| `GradCam` | Gradient-weighted activations for Conv1d architectures (LeNet1D, ResNet) |
 | `LeGrad` | Layer-gradient attribution over PatchTST attention maps |
 | `ModelOutput` | Dataclass: `prediction`, `confidence`, `grad_cam`, `legrad` |
 | `create_model_output` | Factory that runs prediction + both explanation methods for one example |
@@ -33,7 +33,7 @@ Both methods share a duck-typed interface:
 - **GradCAM** — hooks the **last `nn.Conv1d`** in the model, runs the target-class
   score backward, global-average-pools the gradient over the time axis, weights the
   activations, applies ReLU, and linearly upsamples back to the input frame count.
-  Works on LeNet and ResNet; `MLP` and `PatchTST` are unsupported (raises if used).
+  Works on LeNet1D and ResNet; `MLP` and `PatchTST` are unsupported (raises if used).
 - **LeGrad** — runs the target-class score backward through PatchTST, reads the
   per-layer `attention_maps` captured by `_ScaledDotProductAttention` modules,
   averages the ReLU'd gradients over heads/patches and layers, and upsamples the

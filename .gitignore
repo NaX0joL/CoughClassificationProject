@@ -14,7 +14,8 @@ modules/*
 !tests/modules/
 !tests/modules/test_yaml_experiment.py
 
-# opencode related
+# ai related
+.agents/
 AGENTS.md
 opencode.json
 

@@ -1,11 +1,11 @@
 import torch
 from torch import nn
 
-from core.model.architectures.LeNet import LeNet
+from core.model.architectures.LeNet1D import LeNet1D
 
 
-def test_lenet_applies_configured_dropout() -> None:
-    model = LeNet(
+def test_lenet_1d_applies_configured_dropout() -> None:
+    model = LeNet1D(
         conv_channels=[4, 8],
         linear_dims=[16, 8],
         dropout=0.3,

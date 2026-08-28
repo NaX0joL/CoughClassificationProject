@@ -1,11 +1,11 @@
-experiment_id: log_mel_spectrogram_sliding_windows_lenet
+experiment_id: mfcc_sliding_windows_lenet_1d
 
 config:
     type: ExperimentConfig
 
     data_pipeline_config:
         type: DataPipelineConfig
-        name: log_mel_spectrogram_sliding_windows
+        name: mfcc_sliding_windows
         source_reader:
             type: ElderlyCoughAudioSourceReader
             root_path:
@@ -22,13 +22,13 @@ config:
                 - patient_id
                 - cough_audio
         transformer:
-            type: LogMelSpectrogram
+            type: MFCC
             sample_rate: 16000
             n_fft: 512
             win_length: 400
             hop_length: 160
             n_mels: 40
-            log_offset: 0.000001
+            n_mfcc: 40
         padder: null
         splitter:
             type: DataSplitter
@@ -39,17 +39,19 @@ config:
 
     model_config:
         type: ModelConfig
+
         architecture:
-            type: LeNet
+            type: LeNet1D
             conv_channels:
                 - 32
                 - 64
                 - 128
             linear_dims:
                 - 256
-                - 128
+                - 256
             dropout: 0.3
             output_dim: 2
+
         behavior:
             type: ClassificationBehavior
 
@@ -90,7 +92,7 @@ config:
         feature_color_percentile: 99.0
         feature_colormap: inferno
         x_axis_label: Frame
-        y_axis_label: Mel band
-        colorbar_label: Log-mel energy
+        y_axis_label: MFCC coefficient
+        colorbar_label: MFCC value
         include_grad_cam: true
         include_legrad: false

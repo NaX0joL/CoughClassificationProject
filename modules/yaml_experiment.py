@@ -32,7 +32,8 @@ from core.metrics import (
     SpecificityMetric,
 )
 from core.model import ModelConfig
-from core.model.architectures.LeNet import LeNet
+from core.model.architectures.LeNet1D import LeNet1D
+from core.model.architectures.LeNet2D import LeNet2D
 from core.model.architectures.MLP import MLP
 from core.model.architectures.PatchTST import PatchTST
 from core.model.architectures.ResNet import ResNet
@@ -63,7 +64,8 @@ class YamlToExperimentConverter:
         "DataSplitter": DataSplitter,
         "ModelConfig": ModelConfig,
         "MLP": MLP,
-        "LeNet": LeNet,
+        "LeNet1D": LeNet1D,
+        "LeNet2D": LeNet2D,
         "PatchTST": PatchTST,
         "ResNet": ResNet,
         "ClassificationBehavior": ClassificationBehavior,

@@ -2,7 +2,7 @@ from core.experiment import ExperimentOrchestrator, ExperimentConfig
 
 from config_plan import (
     mfcc_sliding_windows_data_pipeline_config,
-    lenet_config,
+    lenet_1d_config,
     normal_batch_training_config,
     default_metrics_config,
     mfcc_gradcam_persistence_config,
@@ -14,7 +14,7 @@ def main():
     
     exp_config = ExperimentConfig(
         data_pipeline_config=mfcc_sliding_windows_data_pipeline_config,
-        model_config=lenet_config,
+        model_config=lenet_1d_config,
         training_config=normal_batch_training_config,
         metrics_config=default_metrics_config,
         persistence_config=mfcc_gradcam_persistence_config,
@@ -22,7 +22,7 @@ def main():
     
     exp = ExperimentOrchestrator(
         config=exp_config,
-        experiment_id="mfcc_sliding_windows_lenet",
+        experiment_id="mfcc_sliding_windows_lenet_1d",
     )
     exp.train_model()
     

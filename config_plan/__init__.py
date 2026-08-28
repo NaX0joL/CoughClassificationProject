@@ -10,7 +10,7 @@ from .metrics.default_metrics import default_metrics_config
 
 from .model import (
     mlp_config,
-    lenet_config,
+    lenet_1d_config,
     patchtst_config,
     transformer_config,
     resnet_config,
@@ -38,7 +38,7 @@ from .training.small_batch_training import small_batch_training_config
 #     "log_mel_spectrogram_sliding_windows_data_pipeline_config",
 #     "default_metrics_config",
     
-#     "lenet_config",
+#     "lenet_1d_config",
 #     "mlp_config",
 #     "patchtst_config",
 #     "transformer_config",

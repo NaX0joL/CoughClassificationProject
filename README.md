@@ -55,7 +55,8 @@ CoughClassificationProject/
 │   │   ├── architectures/
 │   │   │   │
 │   │   │   ├── MLP/                        #     Multi-layer perceptron (Linear)
-│   │   │   ├── LeNet/                      #     1D CNN (Conv1d)
+│   │   │   ├── LeNet1D/                    #     1D CNN (Conv1d)
+│   │   │   ├── LeNet2D/                    #     2D CNN (Conv2d)
 │   │   │   ├── PatchTST/                   #     Patch Time Series Transformer
 │   │   │   ├── ResNet/                     #     Residual network (Conv1d blocks)
 │   │   │   └── Transformer/                #     (empty — not yet implemented)

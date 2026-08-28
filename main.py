@@ -11,7 +11,7 @@ from config_plan import (
     downsampled_waveform_sliding_window_data_pipeline_config,
     
     mlp_config,
-    lenet_config,
+    lenet_1d_config,
     patchtst_config,
     
     default_training_config,
