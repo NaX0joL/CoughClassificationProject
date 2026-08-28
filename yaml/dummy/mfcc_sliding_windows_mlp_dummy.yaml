@@ -1,4 +1,4 @@
-experiment_id: mfcc_sliding_windows_mlp
+experiment_id: mfcc_sliding_windows_mlp_dummy
 
 config:
     type: ExperimentConfig
@@ -55,7 +55,7 @@ config:
     training_config:
         type: TrainingConfig
         random_seed: 42
-        num_epochs: 100
+        num_epochs: 2
         criterion_name: cross_entropy
         optimizer_name: adamw
         learning_rate: 0.0001

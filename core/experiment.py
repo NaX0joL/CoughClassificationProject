@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter
 
 from modules.resolve_pytorch_device import get_optimal_device
 from modules.randomness import set_random_seed
@@ -116,12 +117,21 @@ class ExperimentOrchestrator:
 
         loss_logs = []
         folds_metrics = []
+        total_training_seconds = 0.0
 
         for fold_index, development_fold in enumerate(data_split.development_folds, start=1):
             print(f"fold-{fold_index}")
             
             model = FullModel.create(self.config.model_config).to(self.device)
-            loss_log = self._train_development_fold(model, development_fold)
+            loss_log, fold_training_seconds = self._time_development_fold_training(
+                model,
+                development_fold,
+            )
+            total_training_seconds += fold_training_seconds
+            self._print_training_time(
+                name=f"fold-{fold_index}",
+                training_seconds=fold_training_seconds,
+            )
             
             evaluation = model_evaluator.evaluate(
                 model,
@@ -146,8 +156,22 @@ class ExperimentOrchestrator:
         persistence.save_cross_validation_summary(folds_metrics)
         
         print("training finished")
+        self._print_training_time(
+            name="total",
+            training_seconds=total_training_seconds,
+        )
         print(f"mpkg stored in {persistence.run_directory}")
         return
+
+    def _time_development_fold_training(
+        self,
+        model:FullModel,
+        development_fold:DevelopmentFold,
+    ) -> tuple[LossLog, float]:
+        start_time = perf_counter()
+        loss_log = self._train_development_fold(model, development_fold)
+        training_seconds = perf_counter() - start_time
+        return loss_log, training_seconds
 
     def _train_development_fold(
         self,
@@ -162,3 +186,20 @@ class ExperimentOrchestrator:
         )
         loss_log = trainer.fit()
         return loss_log
+
+    def _print_training_time(
+        self,
+        name:str,
+        training_seconds:float,
+    ) -> None:
+        formatted_time = _format_elapsed_time(training_seconds)
+        print(f"{name} training time: {formatted_time}")
+        return
+
+
+
+def _format_elapsed_time(elapsed_seconds:float) -> str:
+    hours = int(elapsed_seconds // 3600)
+    minutes = int((elapsed_seconds % 3600) // 60)
+    seconds = elapsed_seconds % 60
+    return f"{hours:02d}:{minutes:02d}:{seconds:05.2f}"

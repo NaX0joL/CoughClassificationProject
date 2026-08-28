@@ -54,19 +54,19 @@ def test_converter_builds_complete_sample() -> None:
         ("all/mfcc_sliding_windows_mlp.yaml", MFCC, MLP, False),
         ("all/mfcc_sliding_windows_lenet.yaml", MFCC, LeNet, True),
         (
-            "log_mel_spectrogram_sliding_windows_mlp.yaml",
+            "run/log_mel_spectrogram_sliding_windows_mlp.yaml",
             LogMelSpectrogram,
             MLP,
             False,
         ),
         (
-            "log_mel_spectrogram_sliding_windows_lenet.yaml",
+            "run/log_mel_spectrogram_sliding_windows_lenet.yaml",
             LogMelSpectrogram,
             LeNet,
             True,
         ),
         (
-            "log_mel_spectrogram_sliding_windows_transformer.yaml",
+            "run/log_mel_spectrogram_sliding_windows_transformer.yaml",
             LogMelSpectrogram,
             PatchTST,
             False,
@@ -96,8 +96,28 @@ def test_converter_builds_additional_architecture_samples(
         is include_grad_cam
     )
 
-    if yaml_name == "log_mel_spectrogram_sliding_windows_transformer.yaml":
+    if yaml_name == "run/log_mel_spectrogram_sliding_windows_transformer.yaml":
         assert experiment.config.model_config.architecture.seq_len == 52
+
+
+@pytest.mark.parametrize(
+    "yaml_name",
+    [
+        "mfcc_sliding_windows_mlp_dummy.yaml",
+        "mfcc_sliding_windows_lenet_dummy.yaml",
+        "mfcc_sliding_windows_transformer_dummy.yaml",
+        "log_mel_spectrogram_sliding_windows_mlp_dummy.yaml",
+        "log_mel_spectrogram_sliding_windows_lenet_dummy.yaml",
+        "log_mel_spectrogram_sliding_windows_transformer_dummy.yaml",
+    ],
+)
+def test_converter_builds_two_epoch_dummy_samples(yaml_name:str) -> None:
+    experiment = YamlToExperimentConverter().convert(
+        PROJECT_ROOT / "yaml" / "dummy" / yaml_name,
+    )
+
+    assert experiment.experiment_id.endswith("_dummy")
+    assert experiment.config.training_config.num_epochs == 2
 
 
 def test_converter_builds_paths_lists_and_nulls(tmp_path:Path) -> None:

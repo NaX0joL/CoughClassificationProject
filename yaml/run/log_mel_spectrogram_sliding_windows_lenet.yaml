@@ -14,8 +14,8 @@ config:
         segmenter:
             type: SlidingWindowSegmenter
             window_size: 8200
-            stride: 1025
-            overlap_threshold: 0.5
+            stride: 4100
+            overlap_threshold: 0.7
             negative_label: 0
             keep_short_segments: false
             kept_metadata_key:
@@ -24,7 +24,7 @@ config:
         transformer:
             type: LogMelSpectrogram
             sample_rate: 16000
-            n_fft: 400
+            n_fft: 512
             win_length: 400
             hop_length: 160
             n_mels: 40

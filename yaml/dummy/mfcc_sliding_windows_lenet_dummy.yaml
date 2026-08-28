@@ -1,4 +1,4 @@
-experiment_id: mfcc_sliding_windows_mlp
+experiment_id: mfcc_sliding_windows_lenet_dummy
 
 config:
     type: ExperimentConfig
@@ -41,11 +41,14 @@ config:
         type: ModelConfig
 
         architecture:
-            type: MLP
-            linear_dims:
-                - 512
-                - 256
+            type: LeNet
+            conv_channels:
+                - 32
+                - 64
                 - 128
+            linear_dims:
+                - 256
+                - 256
             dropout: 0.3
             output_dim: 2
 
@@ -55,7 +58,7 @@ config:
     training_config:
         type: TrainingConfig
         random_seed: 42
-        num_epochs: 100
+        num_epochs: 2
         criterion_name: cross_entropy
         optimizer_name: adamw
         learning_rate: 0.0001
@@ -89,7 +92,7 @@ config:
         feature_color_percentile: 99.0
         feature_colormap: inferno
         x_axis_label: Frame
-        y_axis_label: Feature bin
-        colorbar_label: Feature value
-        include_grad_cam: false
+        y_axis_label: MFCC coefficient
+        colorbar_label: MFCC value
+        include_grad_cam: true
         include_legrad: false
