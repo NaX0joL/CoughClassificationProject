@@ -11,6 +11,10 @@ modules/
 !modules/
 modules/*
 !modules/yaml_experiment.py
+!modules/email_notification/
+modules/email_notification/*
+!modules/email_notification/config.example.json
+!modules/email_notification/email_sender.py
 !tests/modules/
 !tests/modules/test_yaml_experiment.py
 

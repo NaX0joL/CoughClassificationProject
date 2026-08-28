@@ -1,0 +1,96 @@
+experiment_id: mfcc_sliding_windows_mlp_dummy_standardized
+
+config:
+    type: ExperimentConfig
+
+    data_pipeline_config:
+        type: DataPipelineConfig
+        name: mfcc_sliding_windows
+        source_reader:
+            type: ElderlyCoughAudioSourceReader
+            root_path:
+                type: Path
+                value: data/Elderly_Cough_Audio
+        segmenter:
+            type: SlidingWindowSegmenter
+            window_size: 8200
+            stride: 4100
+            overlap_threshold: 0.7
+            negative_label: 0
+            keep_short_segments: false
+            kept_metadata_key:
+                - patient_id
+                - cough_audio
+        transformer:
+            - type: MFCC
+              sample_rate: 16000
+              n_fft: 512
+              win_length: 400
+              hop_length: 160
+              n_mels: 40
+              n_mfcc: 40
+            - type: FeatureWiseStandardization
+        padder: null
+        splitter:
+            type: DataSplitter
+            group_metadata_key: patient_id
+            test_ratio: 0.1
+            number_of_folds: 5
+            random_seed: 42
+
+    model_config:
+        type: ModelConfig
+
+        architecture:
+            type: MLP
+            linear_dims:
+                - 512
+                - 256
+                - 128
+            dropout: 0.3
+            output_dim: 2
+
+        behavior:
+            type: ClassificationBehavior
+
+    training_config:
+        type: TrainingConfig
+        random_seed: 42
+        num_epochs: 2
+        criterion_name: cross_entropy
+        optimizer_name: adamw
+        learning_rate: 0.0001
+        weight_decay: 0.001
+        batch_size: 16
+        num_workers: 0
+        drop_last: false
+        class_weighting: balanced
+        early_stopping_patience: null
+        load_best_model: true
+
+    metrics_config:
+        type: MetricsConfig
+        metrics:
+            - type: RocAucMetric
+            - type: PRAucMetric
+            - type: PrecisionMetric
+            - type: RecallMetric
+            - type: SpecificityMetric
+            - type: F1ScoreMetric
+            - type: AccuracyMetric
+            - type: MacroAccuracyMetric
+            - type: MacroF1ScoreMetric
+            - type: MacroPrecisionMetric
+            - type: MacroRecallMetric
+
+    persistence_config:
+        type: PersistenceConfig
+        number_of_train_model_outputs: 20
+        number_of_validation_model_outputs: 20
+        feature_color_percentile: 99.0
+        feature_colormap: inferno
+        x_axis_label: Frame
+        y_axis_label: Feature bin
+        colorbar_label: Feature value
+        include_grad_cam: false
+        include_legrad: false

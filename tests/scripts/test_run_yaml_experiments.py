@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -31,6 +32,11 @@ def test_runner_recursively_runs_yaml_files_in_sorted_order(
         "scripts.run_yaml_experiments.YamlExperimentRunner._run_yaml_file",
         lambda self, yaml_path: run_yaml_file(yaml_path),
     )
+    email_sender = Mock()
+    monkeypatch.setattr(
+        "scripts.run_yaml_experiments.send_email",
+        email_sender,
+    )
 
     YamlExperimentRunner().run(tmp_path)
 
@@ -39,6 +45,11 @@ def test_runner_recursively_runs_yaml_files_in_sorted_order(
         "nested/b.yml",
         "z.yaml",
     ]
+    email_sender.assert_called_once()
+    subject, body = email_sender.call_args.args
+    assert subject == "YAML experiments completed successfully"
+    assert "Succeeded: 3" in body
+    assert "Failed: 0" in body
 
 
 def test_runner_continues_after_failure(
@@ -61,11 +72,22 @@ def test_runner_continues_after_failure(
         "scripts.run_yaml_experiments.YamlExperimentRunner._run_yaml_file",
         lambda self, yaml_path: run_yaml_file(yaml_path),
     )
+    email_sender = Mock()
+    monkeypatch.setattr(
+        "scripts.run_yaml_experiments.send_email",
+        email_sender,
+    )
 
     YamlExperimentRunner().run(tmp_path)
 
     assert run_paths == [first_yaml_path, second_yaml_path]
     assert "Failed: 1" in capsys.readouterr().out
+    email_sender.assert_called_once()
+    subject, body = email_sender.call_args.args
+    assert subject == "YAML experiments completed with failures"
+    assert "Succeeded: 1" in body
+    assert "Failed: 1" in body
+    assert "first.yaml" in body
 
 
 def test_get_arguments_uses_default_yaml_directory(

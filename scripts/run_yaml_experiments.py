@@ -1,13 +1,24 @@
+import os
+import sys
+
+print(os.getcwd())
+sys.path.append(os.getcwd())
+
 import argparse
 import subprocess
 import sys
 from pathlib import Path
+
+from modules.email_notification.email_sender import send_email
 
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_YAML_DIRECTORY = PROJECT_ROOT / "yaml/run"
 YAML_SUFFIXES = {".yaml", ".yml"}
+
+SUCCESS_EMAIL_SUBJECT = "YAML experiments completed successfully"
+FAILURE_EMAIL_SUBJECT = "YAML experiments completed with failures"
 
 
 
@@ -20,11 +31,13 @@ class YamlExperimentRunner:
             yaml_paths,
             yaml_directory,
         )
-        self._print_run_summary(
+        run_summary = self._create_run_summary(
             succeeded_paths,
             failed_paths,
             yaml_directory,
         )
+        self._print_run_summary(run_summary)
+        self._send_run_notification(run_summary, failed_paths)
         return
 
     def _resolve_yaml_directory(self, yaml_directory:Path) -> Path:
@@ -104,23 +117,46 @@ class YamlExperimentRunner:
             failed_paths.append(yaml_path)
         return
 
-    def _print_run_summary(
+    def _create_run_summary(
         self,
         succeeded_paths:list[Path],
         failed_paths:list[Path],
         yaml_directory:Path,
-    ) -> None:
-        print("\nYAML experiment summary")
-        
-        print(f"Succeeded: {len(succeeded_paths)}")
+    ) -> str:
+        summary_lines = [
+            "YAML experiment summary",
+            f"Directory: {yaml_directory}",
+            f"Succeeded: {len(succeeded_paths)}",
+        ]
         for yaml_path in succeeded_paths:
-            print(f"  - {yaml_path.relative_to(yaml_directory)}")
+            summary_lines.append(
+                f"  - {yaml_path.relative_to(yaml_directory)}"
+            )
 
-        print(f"Failed: {len(failed_paths)}")
+        summary_lines.append(f"Failed: {len(failed_paths)}")
         for yaml_path in failed_paths:
-            print(f"  - {yaml_path.relative_to(yaml_directory)}")
-        
-        print()
+            summary_lines.append(
+                f"  - {yaml_path.relative_to(yaml_directory)}"
+            )
+
+        run_summary = "\n".join(summary_lines)
+        return run_summary
+
+    def _print_run_summary(self, run_summary:str) -> None:
+        print(f"\n{run_summary}\n")
+        return
+
+    def _send_run_notification(
+        self,
+        run_summary:str,
+        failed_paths:list[Path],
+    ) -> None:
+        subject = (
+            FAILURE_EMAIL_SUBJECT
+            if failed_paths
+            else SUCCESS_EMAIL_SUBJECT
+        )
+        send_email(subject, run_summary)
         return
 
 def get_arguments():

@@ -4,7 +4,11 @@ from unittest.mock import Mock
 
 import pytest
 
-from core.data_pipeline.preprocessing import LogMelSpectrogram, MFCC
+from core.data_pipeline.preprocessing import (
+    FeatureWiseStandardization,
+    LogMelSpectrogram,
+    MFCC,
+)
 from core.experiment import ExperimentOrchestrator
 from core.metrics import MetricsConfig
 from core.model.architectures.LeNet1D import LeNet1D
@@ -126,6 +130,30 @@ def test_converter_builds_two_epoch_dummy_samples(yaml_name:str) -> None:
 
     assert experiment.experiment_id.endswith("_dummy")
     assert experiment.config.training_config.num_epochs == 2
+
+
+def test_converter_builds_all_standardized_samples() -> None:
+    standardized_run_yaml_paths = sorted(
+        (PROJECT_ROOT / "yaml" / "all").glob("*_standardized.yaml")
+    )
+    standardized_dummy_yaml_paths = sorted(
+        (PROJECT_ROOT / "yaml" / "dummy").glob("*_standardized.yaml")
+    )
+    standardized_yaml_paths = (
+        standardized_run_yaml_paths + standardized_dummy_yaml_paths
+    )
+
+    assert len(standardized_run_yaml_paths) == 8
+    assert len(standardized_dummy_yaml_paths) == 6
+
+    for yaml_path in standardized_yaml_paths:
+        experiment = YamlToExperimentConverter().convert(yaml_path)
+        transformers = experiment.config.data_pipeline_config.transformer
+
+        assert experiment.experiment_id.endswith("_standardized")
+        assert isinstance(transformers, list)
+        assert isinstance(transformers[0], (MFCC, LogMelSpectrogram))
+        assert isinstance(transformers[1], FeatureWiseStandardization)
 
 
 def test_converter_builds_paths_lists_and_nulls(tmp_path:Path) -> None:
