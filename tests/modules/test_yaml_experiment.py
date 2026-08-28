@@ -105,7 +105,7 @@ def test_converter_builds_additional_architecture_samples(
     [
         "mfcc_sliding_windows_mlp_dummy.yaml",
         "mfcc_sliding_windows_lenet_dummy.yaml",
-        "mfcc_sliding_windows_transformer_dummy.yaml",
+        "dummy/mfcc_sliding_windows_transformer_dummy.yaml",
         "log_mel_spectrogram_sliding_windows_mlp_dummy.yaml",
         "log_mel_spectrogram_sliding_windows_lenet_dummy.yaml",
         "log_mel_spectrogram_sliding_windows_transformer_dummy.yaml",
@@ -113,7 +113,7 @@ def test_converter_builds_additional_architecture_samples(
 )
 def test_converter_builds_two_epoch_dummy_samples(yaml_name:str) -> None:
     experiment = YamlToExperimentConverter().convert(
-        PROJECT_ROOT / "yaml" / "dummy" / yaml_name,
+        PROJECT_ROOT / "yaml" / yaml_name,
     )
 
     assert experiment.experiment_id.endswith("_dummy")

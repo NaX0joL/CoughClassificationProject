@@ -44,6 +44,7 @@ def test_runner_recursively_runs_yaml_files_in_sorted_order(
 def test_runner_continues_after_failure(
     tmp_path:Path,
     monkeypatch:pytest.MonkeyPatch,
+    capsys:pytest.CaptureFixture[str],
 ) -> None:
     first_yaml_path = tmp_path / "first.yaml"
     second_yaml_path = tmp_path / "second.yaml"
@@ -61,10 +62,10 @@ def test_runner_continues_after_failure(
         lambda self, yaml_path: run_yaml_file(yaml_path),
     )
 
-    with pytest.raises(RuntimeError, match="1 YAML experiments failed"):
-        YamlExperimentRunner().run(tmp_path)
+    YamlExperimentRunner().run(tmp_path)
 
     assert run_paths == [first_yaml_path, second_yaml_path]
+    assert "Failed: 1" in capsys.readouterr().out
 
 
 def test_get_arguments_uses_default_yaml_directory(

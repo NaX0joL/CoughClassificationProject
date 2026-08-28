@@ -42,7 +42,7 @@ config:
         architecture:
             type: PatchTST
 
-            seq_len: 42
+            seq_len: 52
             pred_len: 2
             patch_len: 1
             stride: 1

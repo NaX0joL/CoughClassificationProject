@@ -25,7 +25,6 @@ class YamlExperimentRunner:
             failed_paths,
             yaml_directory,
         )
-        self._raise_for_failed_runs(failed_paths)
         return
 
     def _resolve_yaml_directory(self, yaml_directory:Path) -> Path:
@@ -112,21 +111,17 @@ class YamlExperimentRunner:
         yaml_directory:Path,
     ) -> None:
         print("\nYAML experiment summary")
+        
         print(f"Succeeded: {len(succeeded_paths)}")
         for yaml_path in succeeded_paths:
-            print(f"  {yaml_path.relative_to(yaml_directory)}")
+            print(f"  - {yaml_path.relative_to(yaml_directory)}")
 
         print(f"Failed: {len(failed_paths)}")
         for yaml_path in failed_paths:
-            print(f"  {yaml_path.relative_to(yaml_directory)}")
+            print(f"  - {yaml_path.relative_to(yaml_directory)}")
+        
+        print()
         return
-
-    def _raise_for_failed_runs(self, failed_paths:list[Path]) -> None:
-        if failed_paths:
-            raise RuntimeError(f"{len(failed_paths)} YAML experiments failed")
-        return
-
-
 
 def get_arguments():
     parser = argparse.ArgumentParser()

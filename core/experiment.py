@@ -128,10 +128,8 @@ class ExperimentOrchestrator:
                 development_fold,
             )
             total_training_seconds += fold_training_seconds
-            self._print_training_time(
-                name=f"fold-{fold_index}",
-                training_seconds=fold_training_seconds,
-            )
+            
+            print(f"time: {_format_elapsed_time(fold_training_seconds)}")
             
             evaluation = model_evaluator.evaluate(
                 model,
@@ -156,10 +154,7 @@ class ExperimentOrchestrator:
         persistence.save_cross_validation_summary(folds_metrics)
         
         print("training finished")
-        self._print_training_time(
-            name="total",
-            training_seconds=total_training_seconds,
-        )
+        print(f"total training time: {_format_elapsed_time(total_training_seconds)}")
         print(f"mpkg stored in {persistence.run_directory}")
         return
 
@@ -186,15 +181,6 @@ class ExperimentOrchestrator:
         )
         loss_log = trainer.fit()
         return loss_log
-
-    def _print_training_time(
-        self,
-        name:str,
-        training_seconds:float,
-    ) -> None:
-        formatted_time = _format_elapsed_time(training_seconds)
-        print(f"{name} training time: {formatted_time}")
-        return
 
 
 

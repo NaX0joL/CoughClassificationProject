@@ -57,9 +57,29 @@ class PatchTST(ModelArchitecture):
         super().__init__()
         self.seq_len = seq_len
         self.pred_len = pred_len
+        self.patch_len = patch_len
+        self.stride = stride
+        
         self.enc_in_feature = enc_in_feature
+        self.e_layers_num = e_layers_num
+        self.n_heads = n_heads_num
+        
+        self.n_normal_heads = n_normal_heads
+        self.n_mp_attn_heads = n_mp_attn_heads
+        self.qk_weight_share = qk_weight_share
+        self.attention_output_scaling = attention_output_scaling
+        
+        self.d_model = d_model
+        self.d_ff = d_ff
+        
+        self.dropout = dropout
+        self.attn_dropout = attn_dropout
+        self.fc_dropout = fc_dropout
+        self.head_dropout = head_dropout
+        
         self.decomposition = decomposition
         self.res_attention = res_attention
+        self.use_positional_encoding = use_positional_encoding
 
         backbone_parameters = {
             "c_in": enc_in_feature,

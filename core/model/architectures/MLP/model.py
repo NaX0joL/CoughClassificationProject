@@ -15,6 +15,7 @@ class MLP(ModelArchitecture):
     ) -> None:
         super().__init__()
         self.linear_dims = linear_dims
+        self.dropout = dropout
         self.output_dim = output_dim
         
         layers = [
