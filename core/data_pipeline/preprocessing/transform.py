@@ -74,7 +74,7 @@ class MFCC(Transformer):
 
 
 
-class LogMelSpectogram(Transformer):
+class LogMelSpectrogram(Transformer):
 
     def __init__(
         self,
@@ -127,7 +127,7 @@ class LogMelSpectogram(Transformer):
 
     def _transform_value(self, value:np.ndarray) -> np.ndarray:
         if value.size == 0:
-            raise ValueError("LogMelSpectogram requires at least one audio sample")
+            raise ValueError("LogMelSpectrogram requires at least one audio sample")
 
         waveform = torch.as_tensor(value, dtype=torch.float32)
         mel_bands = self.transformer(waveform)

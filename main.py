@@ -4,11 +4,11 @@ from pathlib import Path
 from core.experiment import ExperimentOrchestrator
 from core.experiment_config import ExperimentConfig
 from config_plan import (
-    mfcc_data_pipeline_config,
-    mfcc_sliding_window_data_pipeline_config,
-    melband_data_pipeline_config,
-    melband_sliding_window_data_pipeline_config,
-    raw_downsampled_sliding_window_data_pipeline_config,
+    mfcc_annotated_segments_data_pipeline_config,
+    mfcc_sliding_windows_data_pipeline_config,
+    log_mel_spectrogram_annotated_segments_data_pipeline_config,
+    log_mel_spectrogram_sliding_windows_data_pipeline_config,
+    downsampled_waveform_sliding_window_data_pipeline_config,
     
     mlp_config,
     lenet_config,
@@ -24,7 +24,7 @@ from config_plan import (
 def main():
     
     exp_config = ExperimentConfig(
-        data_pipeline_config=mfcc_sliding_window_data_pipeline_config,
+        data_pipeline_config=mfcc_sliding_windows_data_pipeline_config,
         model_config=mlp_config,
         training_config=default_training_config,
         metrics_config=default_metrics_config,

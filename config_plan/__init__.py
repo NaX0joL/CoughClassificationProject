@@ -1,9 +1,9 @@
-from .data_pipeline.mfcc import mfcc_data_pipeline_config
-from .data_pipeline.melband import melband_data_pipeline_config
-from .data_pipeline.mfcc_sliding_window import mfcc_sliding_window_data_pipeline_config
-from .data_pipeline.melband_sliding_window import melband_sliding_window_data_pipeline_config
+from .data_pipeline.mfcc_annotated_segments import mfcc_annotated_segments_data_pipeline_config
+from .data_pipeline.log_mel_spectrogram_annotated_segments import log_mel_spectrogram_annotated_segments_data_pipeline_config
+from .data_pipeline.mfcc_sliding_windows import mfcc_sliding_windows_data_pipeline_config
+from .data_pipeline.log_mel_spectrogram_sliding_windows import log_mel_spectrogram_sliding_windows_data_pipeline_config
 from .data_pipeline import (
-    raw_downsampled_sliding_window_data_pipeline_config,
+    downsampled_waveform_sliding_window_data_pipeline_config,
 )
 
 from .metrics.default_metrics import default_metrics_config
@@ -18,12 +18,12 @@ from .model import (
 
 from .persistence import (
     default_persistence_config,
-    melband_gradcam_persistence_config,
-    melband_legrad_persistence_config,
+    log_mel_spectrogram_gradcam_persistence_config,
+    log_mel_spectrogram_legrad_persistence_config,
     mfcc_gradcam_persistence_config,
     mfcc_legrad_persistence_config,
     mfcc_persistence_config,
-    melband_persistence_config,
+    log_mel_spectrogram_persistence_config,
 )
 
 from .training.default_training import default_training_config
@@ -32,10 +32,10 @@ from .training.small_batch_training import small_batch_training_config
 
 
 # __all__ = [
-#     "mfcc_data_pipeline_config",
-#     "melband_data_pipeline_config",
-#     "mfcc_sliding_window_data_pipeline_config",
-#     "melband_sliding_window_data_pipeline_config",
+#     "mfcc_annotated_segments_data_pipeline_config",
+#     "log_mel_spectrogram_annotated_segments_data_pipeline_config",
+#     "mfcc_sliding_windows_data_pipeline_config",
+#     "log_mel_spectrogram_sliding_windows_data_pipeline_config",
 #     "default_metrics_config",
     
 #     "lenet_config",
@@ -45,8 +45,8 @@ from .training.small_batch_training import small_batch_training_config
 #     "resnet_config",
     
 #     "default_persistence_config",
-#     "melband_gradcam_persistence_config",
-#     "melband_legrad_persistence_config",
+#     "log_mel_spectrogram_gradcam_persistence_config",
+#     "log_mel_spectrogram_legrad_persistence_config",
 #     "mfcc_gradcam_persistence_config",
 #     "mfcc_legrad_persistence_config",
     

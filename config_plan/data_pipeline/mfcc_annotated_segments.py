@@ -4,8 +4,8 @@ from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
 from core.data_pipeline.stratifier import DataSplitter
 
 
-mfcc_data_pipeline_config = DataPipelineConfig(
-    name="mfcc",
+mfcc_annotated_segments_data_pipeline_config = DataPipelineConfig(
+    name="mfcc_annotated_segments",
     source_reader=ElderlyCoughAudioSourceReader(),
     segmenter=CoughSegmenter(
         kept_metadata_key=["patient_id", "cough_audio"],

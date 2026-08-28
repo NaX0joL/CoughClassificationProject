@@ -8,6 +8,11 @@ tmp_trash/
 
 # misc modules
 modules/
+!modules/
+modules/*
+!modules/yaml_experiment.py
+!tests/modules/
+!tests/modules/test_yaml_experiment.py
 
 # opencode related
 AGENTS.md

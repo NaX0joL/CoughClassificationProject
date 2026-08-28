@@ -1,14 +1,14 @@
-from .mfcc import mfcc_data_pipeline_config
-from .melband import melband_data_pipeline_config
-from .mfcc_sliding_window import mfcc_sliding_window_data_pipeline_config
-from .melband_sliding_window import melband_sliding_window_data_pipeline_config
-from .raw_downsampled_sliding_window import raw_downsampled_sliding_window_data_pipeline_config
+from .mfcc_annotated_segments import mfcc_annotated_segments_data_pipeline_config
+from .log_mel_spectrogram_annotated_segments import log_mel_spectrogram_annotated_segments_data_pipeline_config
+from .mfcc_sliding_windows import mfcc_sliding_windows_data_pipeline_config
+from .log_mel_spectrogram_sliding_windows import log_mel_spectrogram_sliding_windows_data_pipeline_config
+from .downsampled_waveform_sliding_window import downsampled_waveform_sliding_window_data_pipeline_config
 
 
 __all__ = [
-    "melband_data_pipeline_config",
-    "mfcc_data_pipeline_config",
-    "melband_sliding_window_data_pipeline_config",
-    "mfcc_sliding_window_data_pipeline_config",
-    "raw_downsampled_sliding_window_data_pipeline_config",
+    "log_mel_spectrogram_annotated_segments_data_pipeline_config",
+    "mfcc_annotated_segments_data_pipeline_config",
+    "log_mel_spectrogram_sliding_windows_data_pipeline_config",
+    "mfcc_sliding_windows_data_pipeline_config",
+    "downsampled_waveform_sliding_window_data_pipeline_config",
 ]

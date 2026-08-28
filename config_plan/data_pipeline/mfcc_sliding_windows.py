@@ -5,8 +5,8 @@ from core.data_pipeline.stratifier import DataSplitter
 
 
 
-mfcc_sliding_window_data_pipeline_config = DataPipelineConfig(
-    name="mfcc_sliding_window",
+mfcc_sliding_windows_data_pipeline_config = DataPipelineConfig(
+    name="mfcc_sliding_windows",
     source_reader=ElderlyCoughAudioSourceReader(),
     segmenter=SlidingWindowSegmenter(
         window_size=8200,

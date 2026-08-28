@@ -4,38 +4,38 @@ import sys
 print(os.getcwd())
 sys.path.append(os.getcwd())
 
-from train_mfcc_mlp import main as mfcc_mlp
-from train_mfcc_lenet import main as mfcc_lenet
-from train_mfcc_patchtst import main as mfcc_patchtst
-from train_mfcc_transformer import main as mfcc_transformer
+from train_mfcc_annotated_segments_mlp import main as mfcc_annotated_segments_mlp
+from train_mfcc_annotated_segments_lenet import main as mfcc_annotated_segments_lenet
+from train_mfcc_annotated_segments_patchtst import main as mfcc_annotated_segments_patchtst
+from train_mfcc_annotated_segments_transformer import main as mfcc_annotated_segments_transformer
 
-from train_melband_mlp import main as melband_mlp
-from train_melband_lenet import main as melband_lenet
-from train_melband_patchtst import main as melband_patchtst
-from train_melband_transformer import main as melband_transformer
+from train_log_mel_spectrogram_annotated_segments_mlp import main as log_mel_spectrogram_annotated_segments_mlp
+from train_log_mel_spectrogram_annotated_segments_lenet import main as log_mel_spectrogram_annotated_segments_lenet
+from train_log_mel_spectrogram_annotated_segments_patchtst import main as log_mel_spectrogram_annotated_segments_patchtst
+from train_log_mel_spectrogram_annotated_segments_transformer import main as log_mel_spectrogram_annotated_segments_transformer
 
-from train_mfcc_sliding_window_mlp import main as mfcc_sliding_window_mlp
-from train_mfcc_sliding_window_lenet import main as mfcc_sliding_window_lenet
-from train_mfcc_sliding_window_transformer import main as mfcc_sliding_window_transformer
+from train_mfcc_sliding_windows_mlp import main as mfcc_sliding_windows_mlp
+from train_mfcc_sliding_windows_lenet import main as mfcc_sliding_windows_lenet
+from train_mfcc_sliding_windows_transformer import main as mfcc_sliding_windows_transformer
 
 
 
 def main():
     
     script_queue = [
-        # mfcc_mlp,
-        # mfcc_lenet,
-        # mfcc_patchtst,
-        # mfcc_transformer,
+        # mfcc_annotated_segments_mlp,
+        # mfcc_annotated_segments_lenet,
+        # mfcc_annotated_segments_patchtst,
+        # mfcc_annotated_segments_transformer,
         
-        # melband_mlp,
-        # melband_lenet,
-        # melband_patchtst,
-        # melband_transformer,
+        # log_mel_spectrogram_annotated_segments_mlp,
+        # log_mel_spectrogram_annotated_segments_lenet,
+        # log_mel_spectrogram_annotated_segments_patchtst,
+        # log_mel_spectrogram_annotated_segments_transformer,
         
-        # mfcc_sliding_window_mlp,
-        # mfcc_sliding_window_lenet,
-        mfcc_sliding_window_transformer,
+        # mfcc_sliding_windows_mlp,
+        # mfcc_sliding_windows_lenet,
+        mfcc_sliding_windows_transformer,
     ]
     
     for script in script_queue:
