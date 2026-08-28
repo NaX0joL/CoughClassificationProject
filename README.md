@@ -26,7 +26,7 @@ CoughClassificationProject/
 │   │   ├── preprocessing/                  #   Concrete transforms
 │   │   │   │
 │   │   │   ├── segmentation.py
-│   │   │   ├── transform.py                #     MFCC, MelBand
+│   │   │   ├── transform.py                #     MFCC, LogMelSpectogram
 │   │   │   ├── padding.py
 │   │   │   └── sampling.py
 │   │   │

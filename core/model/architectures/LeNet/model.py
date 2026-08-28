@@ -11,11 +11,13 @@ class LeNet(ModelArchitecture):
         self, 
         conv_channels:list[int],
         linear_dims:list[int],
+        dropout:float,
         output_dim:int,
     ) -> None:
         super().__init__()
         self.conv_channels = conv_channels
         self.linear_dims = linear_dims
+        self.dropout = dropout
         self.output_dim = output_dim
         
         conv_layers = [
@@ -27,6 +29,7 @@ class LeNet(ModelArchitecture):
             ),
             nn.ReLU(),
             nn.AvgPool1d(kernel_size=2, stride=2),
+            nn.Dropout1d(p=dropout),
         ]
         
         for index in range(len(conv_channels) - 1):
@@ -40,12 +43,14 @@ class LeNet(ModelArchitecture):
                 ),
                 nn.ReLU(),
                 nn.AvgPool1d(kernel_size=2, stride=2),
+                nn.Dropout1d(p=dropout),
             ])
             
         linear_layers = [
             nn.Flatten(),
             nn.LazyLinear(out_features=linear_dims[0]),
             nn.ReLU(),
+            nn.Dropout(p=dropout),
         ]
         
         for index in range(len(linear_dims) - 1):
@@ -55,6 +60,7 @@ class LeNet(ModelArchitecture):
                     out_features=linear_dims[index + 1],
                 ),
                 nn.ReLU(),
+                nn.Dropout(p=dropout),
             ])
             
         linear_layers.append(nn.Linear(

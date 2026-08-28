@@ -23,7 +23,6 @@ from .gallery_directory import (
 )
 
 
-FEATURE_COLORMAP = "plasma"
 PATIENT_ID_METADATA_KEY = "patient_id"
 
 
@@ -36,6 +35,7 @@ class ExampleGalleryGenerator:
         num_examples:int=10,
         random_seed:int|None=None,
         class_names:dict[int, str]|None=None,
+        feature_colormap:str="inferno",
         x_axis_label:str="Frame",
         y_axis_label:str="Feature bin",
         colorbar_label:str="Value",
@@ -46,6 +46,7 @@ class ExampleGalleryGenerator:
         self.num_examples = num_examples
         self.random_seed = random_seed
         self.class_names = class_names
+        self.feature_colormap = feature_colormap
         self.x_axis_label = x_axis_label
         self.y_axis_label = y_axis_label
         self.colorbar_label = colorbar_label
@@ -72,6 +73,7 @@ class ExampleGalleryGenerator:
             num_examples=self.num_examples,
             seed=self.random_seed,
             class_names=self.class_names,
+            feature_colormap=self.feature_colormap,
             x_axis_label=self.x_axis_label,
             y_axis_label=self.y_axis_label,
             colorbar_label=self.colorbar_label,
@@ -105,6 +107,7 @@ def save_examples_pdf(
     num_examples:int=10,
     seed:int|None=None,
     class_names:dict[int, str]|None=None,
+    feature_colormap:str="inferno",
     x_axis_label:str="Frame",
     y_axis_label:str="Feature bin",
     colorbar_label:str="Value",
@@ -129,6 +132,7 @@ def save_examples_pdf(
                 int(index),
                 color_limit,
                 class_names,
+                feature_colormap,
                 x_axis_label,
                 y_axis_label,
                 colorbar_label,
@@ -219,6 +223,7 @@ def _save_example_page(
     sample_index:int,
     color_limit:float,
     class_names:dict[int, str]|None,
+    feature_colormap:str,
     x_axis_label:str,
     y_axis_label:str,
     colorbar_label:str,
@@ -239,6 +244,7 @@ def _save_example_page(
         axis,
         example.value,
         color_normalization,
+        feature_colormap,
         x_axis_label,
         y_axis_label,
         colorbar_label,
@@ -258,6 +264,7 @@ def _plot_feature_values(
     axis,
     values:np.ndarray,
     color_normalization:TwoSlopeNorm,
+    feature_colormap:str,
     x_axis_label:str,
     y_axis_label:str,
     colorbar_label:str,
@@ -277,7 +284,7 @@ def _plot_feature_values(
         values.T,
         aspect="auto",
         origin="lower",
-        cmap=FEATURE_COLORMAP,
+        cmap=feature_colormap,
         norm=color_normalization,
     )
     axis.set(xlabel=x_axis_label, ylabel=y_axis_label)

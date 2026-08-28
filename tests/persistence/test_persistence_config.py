@@ -16,6 +16,7 @@ def test_feature_persistence_plans_describe_their_feature_representation() -> No
     ("arguments", "message"),
     [
         ({"feature_color_percentile": 0}, "feature_color_percentile"),
+        ({"feature_colormap": " "}, "feature_colormap"),
         ({"x_axis_label": " "}, "x_axis_label"),
         ({"y_axis_label": " "}, "y_axis_label"),
         ({"colorbar_label": ""}, "colorbar_label"),

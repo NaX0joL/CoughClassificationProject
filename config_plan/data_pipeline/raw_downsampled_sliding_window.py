@@ -1,5 +1,5 @@
 from core.data_pipeline import DataPipelineConfig
-from core.data_pipeline.preprocessing import SlidingWindowSegmenter, MelBand, AudioDownSampler
+from core.data_pipeline.preprocessing import DownSampler, SlidingWindowSegmenter
 from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
 from core.data_pipeline.stratifier import DataSplitter
 
@@ -16,7 +16,7 @@ raw_downsampled_sliding_window_data_pipeline_config = DataPipelineConfig(
         keep_short_segments=False,
         kept_metadata_key=["patient_id", "cough_audio"],
     ),
-    transformer=AudioDownSampler(
+    transformer=DownSampler(
         original_sampling_rate=16000,
         target_sampling_rate=16000,
         resampling_method="sinc_interp_hann",

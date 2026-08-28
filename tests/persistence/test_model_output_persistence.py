@@ -22,6 +22,7 @@ def test_model_output_page_supports_univariate_and_multivariate_features(tmp_pat
             output=ModelOutput(prediction=0, confidence=0.9, grad_cam=None, legrad=None),
             class_names={0: "healthy"},
             color_normalization=TwoSlopeNorm(vmin=-20, vcenter=0, vmax=20),
+            feature_colormap="inferno",
             x_axis_label="Time step",
             y_axis_label="Amplitude",
             colorbar_label="Intensity",

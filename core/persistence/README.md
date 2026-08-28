@@ -88,7 +88,7 @@ orchestrator = ExperimentOrchestrator.load(Path("outputs/mpkg/tmp/mfcc_mlp"))
 - Axis/colorbar labels default to `"Frame"` / `"Feature bin"` / `"Feature value"`
 
 Pre-built variants in `config_plan/persistence/` toggle GradCAM/LeGrad and labels
-per feature type (MFCC vs MelBand).
+per feature type (MFCC vs LogMelSpectogram).
 
 ## Gotchas
 

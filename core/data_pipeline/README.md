@@ -17,7 +17,7 @@ CoughSegmenter                 ──► Example (one cough segment)
         │ 
         │ transform
         │ 
-Raw | MFCC | MelBand           ──► Example (feature frames)
+Raw | MFCC | LogMelSpectogram  ──► Example (feature frames)
         │ 
         │ pad
         │ 
@@ -39,7 +39,7 @@ ExperimentOrchestrator.train_model()  (one fold at a time)
 | `DataPipelineConfig` | Bundle of the five stage instances; `default()` builds the standard stack |
 | `SourceReader`, `Segmenter`, `Transformer`, `Padder`, `Splitter` | ABCs defining the stage contracts |
 | `ElderlyCoughAudioSourceReader` | Dataset-specific I/O: metadata + audio → `SourceSeries` |
-| `CoughSegmenter`, `MFCC`, `MelBand`, `ZeroPadder` | Concrete preprocessing stages |
+| `CoughSegmenter`, `MFCC`, `LogMelSpectogram`, `ZeroPadder` | Concrete preprocessing stages |
 | `DataSplitter` | Splits examples into hold-out test + 5-fold development sets |
 | `ExampleDataset` | `torch.utils.data.Dataset` wrapper; yields `{"value", "label", "metadata"}` |
 | `SourceSeries`, `Example`, `DevelopmentFold`, `DataSplit` | Intermediary dataclasses flowing through the pipeline |
@@ -52,7 +52,7 @@ ExperimentOrchestrator.train_model()  (one fold at a time)
   (`RawAudioReader` + `AudioResampler`, with a SHA-256-keyed on-disk cache).
 - **Segmentation** — each recording is sliced into cough segments using the
   `detected_cough_segments` metadata intervals (`value[start:end+1]`).
-- **Transform** — `MFCC` produces log-MFCC frames `(time, n_mfcc)`; `MelBand`
+- **Transform** — `MFCC` produces log-MFCC frames `(time, n_mfcc)`; `LogMelSpectogram`
   produces log-mel band energies `(time, n_mels)`. Same STFT settings:
   `n_fft=400`, `hop_length=160` (10 ms), `n_mels=40`.
 - **Padding** — `ZeroPadder` pads the time axis to **820 frames** (~8.2 s of
@@ -79,7 +79,7 @@ data_split = pipeline.get_data_split()   # test_dataset + development_folds
 ## Key parameters (`DataPipelineConfig.default()`)
 
 - Source: `data/Elderly_Cough_Audio/` — `metadata.xlsx`, `translations.json`, `source_data/`
-- MFCC/MelBand: `sample_rate=16000`, `n_fft=400`, `win_length=400`, `hop_length=160`, `n_mels=40`
+- MFCC/LogMelSpectogram: `sample_rate=16000`, `n_fft=400`, `win_length=400`, `hop_length=160`, `n_mels=40`
 - ZeroPadder: `target_length=820`, `padding_type="random"`, `random_seed=42`
 - DataSplitter: `group_metadata_key="patient_id"`, `test_ratio=0.1`, `number_of_folds=5`, `random_seed=42`
 

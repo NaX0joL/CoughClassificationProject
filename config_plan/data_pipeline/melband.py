@@ -1,5 +1,5 @@
 from core.data_pipeline import DataPipelineConfig
-from core.data_pipeline.preprocessing import CoughSegmenter, MelBand, ZeroPadder
+from core.data_pipeline.preprocessing import CoughSegmenter, LogMelSpectogram, ZeroPadder
 from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
 from core.data_pipeline.stratifier import DataSplitter
 
@@ -10,7 +10,7 @@ melband_data_pipeline_config = DataPipelineConfig(
     segmenter=CoughSegmenter(
         kept_metadata_key=["patient_id", "cough_audio"],
     ),
-    transformer=MelBand(
+    transformer=LogMelSpectogram(
         sample_rate=16_000,
         n_fft=400,
         win_length=400,

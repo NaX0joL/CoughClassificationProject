@@ -6,8 +6,9 @@ from core.model.behavior.classification_behavior import ClassificationBehavior
 
 lenet_config = ModelConfig(
     architecture=LeNet(
-        conv_channels=[16, 32, 128],
-        linear_dims=[256, 256],
+        conv_channels=[32, 64, 128],
+        linear_dims=[256, 128],
+        dropout=0.3,
         output_dim=2,
     ),
     behavior=ClassificationBehavior(),

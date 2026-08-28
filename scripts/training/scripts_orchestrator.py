@@ -15,6 +15,8 @@ from train_melband_patchtst import main as melband_patchtst
 from train_melband_transformer import main as melband_transformer
 
 from train_mfcc_sliding_window_mlp import main as mfcc_sliding_window_mlp
+from train_mfcc_sliding_window_lenet import main as mfcc_sliding_window_lenet
+from train_mfcc_sliding_window_transformer import main as mfcc_sliding_window_transformer
 
 
 
@@ -31,8 +33,11 @@ def main():
         # melband_patchtst,
         # melband_transformer,
         
-        mfcc_sliding_window_mlp,
+        # mfcc_sliding_window_mlp,
+        # mfcc_sliding_window_lenet,
+        mfcc_sliding_window_transformer,
     ]
+    
     for script in script_queue:
         script()
         print()

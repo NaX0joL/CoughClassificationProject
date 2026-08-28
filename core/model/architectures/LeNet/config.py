@@ -6,6 +6,7 @@ from dataclasses import dataclass
 class LeNetConfig:
     conv_channels: list[int]
     linear_dims: list[int]
+    dropout: float
     output_dim: int
     
     @classmethod
@@ -13,6 +14,7 @@ class LeNetConfig:
         le_net_config = cls(
             conv_channels = [8, 16, 128],
             linear_dims = [640],
+            dropout = 0.3,
             output_dim = 2,
         )
         return le_net_config

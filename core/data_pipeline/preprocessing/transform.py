@@ -74,7 +74,7 @@ class MFCC(Transformer):
 
 
 
-class MelBand(Transformer):
+class LogMelSpectogram(Transformer):
 
     def __init__(
         self,
@@ -109,6 +109,7 @@ class MelBand(Transformer):
             hop_length=self.hop_length,
             n_mels=self.n_mels,
         )
+        
         return
 
     def transform(self, examples:list[Example]) -> list[Example]:
@@ -126,7 +127,7 @@ class MelBand(Transformer):
 
     def _transform_value(self, value:np.ndarray) -> np.ndarray:
         if value.size == 0:
-            raise ValueError("MelBand requires at least one audio sample")
+            raise ValueError("LogMelSpectogram requires at least one audio sample")
 
         waveform = torch.as_tensor(value, dtype=torch.float32)
         mel_bands = self.transformer(waveform)
@@ -135,7 +136,7 @@ class MelBand(Transformer):
 
 
 
-class AudioDownSampler(Transformer):
+class DownSampler(Transformer):
     
     RESAMPLING_METHOD = ("sinc_interp_hann", "sinc_interp_kaiser")
     
@@ -181,7 +182,7 @@ class AudioDownSampler(Transformer):
 
     def _resample_value(self, value:np.ndarray) -> np.ndarray:
         if value.size == 0:
-            raise ValueError("AudioDownSampler requires a non-empty audio array.")
+            raise ValueError("DownSampler requires a non-empty audio array.")
 
         if self.resampler is None:
             return value.copy()
@@ -191,80 +192,6 @@ class AudioDownSampler(Transformer):
         resampled = self.resampler(waveform)
         return resampled.T.numpy()
 
-
-
-class Resampler(Transformer):
-    
-    INTERPOLATION_METHODS = ("linear", "nearest")
-
-    def __init__(
-        self,
-        target_length:int,
-        method:str="linear",
-    ) -> None:
-        if target_length <= 0:
-            raise ValueError("target_length must be positive")
-        if method not in self.INTERPOLATION_METHODS:
-            raise ValueError(f"method must be one of {self.INTERPOLATION_METHODS}")
-
-        self.target_length = target_length
-        self.method = method
-        return
-
-    def transform(self, examples:list[Example]) -> list[Example]:
-        transformed_examples = []
-
-        for example in examples:
-            transformed_example = Example(
-                value=self._resample_value(example.value),
-                label=example.label,
-                metadata=example.metadata,
-            )
-            transformed_examples.append(transformed_example)
-
-        return transformed_examples
-
-    def _resample_value(self, value:np.ndarray) -> np.ndarray:
-        if value.size == 0:
-            raise ValueError("Resampler requires a non-empty array")
-
-        source_length = value.shape[0]
-        if source_length == self.target_length:
-            return value.copy()
-
-        if self.method == "linear":
-            return self._linear_interpolate(value, source_length)
-
-        if self.method == "nearest":
-            return self._nearest_interpolate(value, source_length)
-        
-        raise ValueError(f"invalid interpolation method, got {self.method}")
-
-    def _linear_interpolate(
-        self,
-        value:np.ndarray,
-        source_length:int,
-    ) -> np.ndarray:
-        source_indices = np.linspace(0, source_length - 1, num=source_length)
-        target_indices = np.linspace(0, source_length - 1, num=self.target_length)
-        resampled = np.zeros((self.target_length, value.shape[1]))
-
-        for col in range(value.shape[1]):
-            resampled[:, col] = np.interp(target_indices, source_indices, value[:, col])
-
-        return resampled
-
-    def _nearest_interpolate(
-        self,
-        value:np.ndarray,
-        source_length:int,
-    ) -> np.ndarray:
-        source_indices = np.linspace(0, source_length - 1, num=source_length)
-        target_indices = np.linspace(0, source_length - 1, num=self.target_length)
-        nearest_indices = np.searchsorted(source_indices, target_indices, side="right") - 1
-        nearest_indices = np.clip(nearest_indices, 0, source_length - 1)
-
-        return value[nearest_indices].copy()
 
 
 def _validate_feature_parameters(

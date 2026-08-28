@@ -6,7 +6,6 @@ from core.experiment_config import ExperimentConfig
 from config_plan import (
     mfcc_data_pipeline_config,
     mfcc_sliding_window_data_pipeline_config,
-    mfcc_resampled_data_pipeline_config,
     melband_data_pipeline_config,
     melband_sliding_window_data_pipeline_config,
     raw_downsampled_sliding_window_data_pipeline_config,

@@ -15,9 +15,6 @@ from ...model import FullModel
 from ..persistence_config import PersistenceConfig
 
 
-FEATURE_COLORMAP = "plasma"
-
-
 def save_model_output_pdfs(
     figures_directory:Path,
     fold_index:int,
@@ -41,6 +38,7 @@ def save_model_output_pdfs(
         config.number_of_train_model_outputs,
         config.include_grad_cam,
         config.include_legrad,
+        config.feature_colormap,
         config.x_axis_label,
         config.y_axis_label,
         config.colorbar_label,
@@ -54,6 +52,7 @@ def save_model_output_pdfs(
         config.number_of_validation_model_outputs,
         config.include_grad_cam,
         config.include_legrad,
+        config.feature_colormap,
         config.x_axis_label,
         config.y_axis_label,
         config.colorbar_label,
@@ -83,6 +82,7 @@ def _save_dataset_output_pdf(
     number_of_outputs:int,
     include_grad_cam:bool,
     include_legrad:bool,
+    feature_colormap:str,
     x_axis_label:str,
     y_axis_label:str,
     colorbar_label:str,
@@ -112,6 +112,7 @@ def _save_dataset_output_pdf(
                 output,
                 class_names,
                 color_normalization,
+                feature_colormap,
                 x_axis_label,
                 y_axis_label,
                 colorbar_label,
@@ -136,6 +137,7 @@ def _save_output_page(
     output:ModelOutput,
     class_names:dict[int, str],
     color_normalization:TwoSlopeNorm,
+    feature_colormap:str,
     x_axis_label:str,
     y_axis_label:str,
     colorbar_label:str,
@@ -158,6 +160,7 @@ def _save_output_page(
         feature_axis,
         example.value,
         color_normalization,
+        feature_colormap,
         x_axis_label,
         y_axis_label,
         colorbar_label,
@@ -198,6 +201,7 @@ def _plot_feature_values(
     axis,
     values:np.ndarray,
     color_normalization:TwoSlopeNorm,
+    feature_colormap:str,
     x_axis_label:str,
     y_axis_label:str,
     colorbar_label:str,
@@ -217,7 +221,7 @@ def _plot_feature_values(
         values.T,
         aspect="auto",
         origin="lower",
-        cmap=FEATURE_COLORMAP,
+        cmap=feature_colormap,
         norm=color_normalization,
     )
     axis.set(ylabel=y_axis_label)
