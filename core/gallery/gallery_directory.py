@@ -59,10 +59,14 @@ def resolve_gallery_directory(
 def _extract_init_params(component:Any) -> dict[str, Any]|None:
     if component is None:
         return None
-    return {
+    parameters = {
         name: value
         for name, value in vars(component).items()
         if _is_hashable_primitive(value)
+    }
+    return {
+        "type": f"{component.__class__.__module__}.{component.__class__.__qualname__}",
+        "parameters": parameters,
     }
 
 

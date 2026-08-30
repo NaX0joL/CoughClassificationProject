@@ -1,11 +1,11 @@
-experiment_id: mfcc_sliding_windows_lenet_1d_standardized
+experiment_id: downsampled_waveform_sliding_windows_transformer_standardized
 
 config:
     type: ExperimentConfig
 
     data_pipeline_config:
         type: DataPipelineConfig
-        name: mfcc_sliding_windows
+        name: downsampled_waveform_sliding_windows_standardized
         source_reader:
             type: ElderlyCoughAudioSourceReader
             root_path:
@@ -22,13 +22,11 @@ config:
                 - patient_id
                 - cough_audio
         transformer:
-            - type: MFCC
-              sample_rate: 16000
-              n_fft: 512
-              win_length: 400
-              hop_length: 160
-              n_mels: 40
-              n_mfcc: 40
+            - type: DownSampler
+              original_sampling_rate: 16000
+              target_sampling_rate: 4000
+              resampling_method: sinc_interp_hann
+              lowpass_filter_width: 6
             - type: FeatureWiseStandardization
         padder: null
         splitter:
@@ -40,19 +38,25 @@ config:
 
     model_config:
         type: ModelConfig
-
         architecture:
-            type: LeNet1D
-            conv_channels:
-                - 32
-                - 64
-                - 128
-            linear_dims:
-                - 256
-                - 256
+            type: PatchTST
+            seq_len: 2050
+            pred_len: 2
+            patch_len: 1
+            stride: 1
+            enc_in_feature: 1
+            e_layers_num: 2
+            n_heads_num: 4
+            d_model: 128
+            d_ff: 256
             dropout: 0.3
-            output_dim: 2
-
+            fc_dropout: 0.2
+            head_dropout: 0.2
+            attn_dropout: 0.1
+            use_pre_norm: false
+            max_seq_len: 4096
+            res_attention: true
+            store_attn: false
         behavior:
             type: ClassificationBehavior
 
@@ -64,7 +68,7 @@ config:
         optimizer_name: adamw
         learning_rate: 0.0001
         weight_decay: 0.001
-        batch_size: 16
+        batch_size: 1
         num_workers: 0
         drop_last: false
         class_weighting: balanced
@@ -92,8 +96,8 @@ config:
         number_of_validation_model_outputs: 20
         feature_color_percentile: 99.0
         feature_colormap: inferno
-        x_axis_label: Frame
-        y_axis_label: MFCC coefficient
-        colorbar_label: MFCC value
-        include_grad_cam: true
+        x_axis_label: Sample
+        y_axis_label: Standardized amplitude
+        colorbar_label: Standardized amplitude
+        include_grad_cam: false
         include_legrad: false

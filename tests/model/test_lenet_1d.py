@@ -28,3 +28,16 @@ def test_lenet_1d_applies_configured_dropout() -> None:
     assert len(conv_dropouts) == 2
     assert len(linear_dropouts) == 2
     assert all(layer.p == 0.3 for layer in conv_dropouts + linear_dropouts)
+
+
+def test_lenet_1d_accepts_single_channel_waveforms() -> None:
+    model = LeNet1D(
+        conv_channels=[4, 8],
+        linear_dims=[16, 8],
+        dropout=0.3,
+        output_dim=2,
+    )
+
+    outputs = model(torch.rand(2, 2050))
+
+    assert outputs.shape == (2, 2)

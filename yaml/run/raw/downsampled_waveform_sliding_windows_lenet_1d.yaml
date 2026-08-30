@@ -1,11 +1,11 @@
-experiment_id: log_mel_spectrogram_sliding_windows_lenet_1d_standardized
+experiment_id: downsampled_waveform_sliding_windows_lenet_1d
 
 config:
     type: ExperimentConfig
 
     data_pipeline_config:
         type: DataPipelineConfig
-        name: log_mel_spectrogram_sliding_windows
+        name: downsampled_waveform_sliding_windows
         source_reader:
             type: ElderlyCoughAudioSourceReader
             root_path:
@@ -22,14 +22,11 @@ config:
                 - patient_id
                 - cough_audio
         transformer:
-            - type: LogMelSpectrogram
-              sample_rate: 16000
-              n_fft: 512
-              win_length: 400
-              hop_length: 160
-              n_mels: 40
-              log_offset: 0.000001
-            - type: FeatureWiseStandardization
+            type: DownSampler
+            original_sampling_rate: 16000
+            target_sampling_rate: 4000
+            resampling_method: sinc_interp_hann
+            lowpass_filter_width: 6
         padder: null
         splitter:
             type: DataSplitter
@@ -40,6 +37,7 @@ config:
 
     model_config:
         type: ModelConfig
+
         architecture:
             type: LeNet1D
             conv_channels:
@@ -51,6 +49,7 @@ config:
                 - 256
             dropout: 0.3
             output_dim: 2
+
         behavior:
             type: ClassificationBehavior
 
@@ -90,8 +89,8 @@ config:
         number_of_validation_model_outputs: 20
         feature_color_percentile: 99.0
         feature_colormap: inferno
-        x_axis_label: Frame
-        y_axis_label: Mel band
-        colorbar_label: Log-mel energy
+        x_axis_label: Sample
+        y_axis_label: Amplitude
+        colorbar_label: Amplitude
         include_grad_cam: true
         include_legrad: false

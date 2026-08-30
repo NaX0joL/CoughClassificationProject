@@ -8,6 +8,7 @@ from core.data_pipeline import DataPipelineConfig
 from core.data_pipeline.preprocessing import (
     CoughSegmenter,
     DownSampler,
+    FeatureWiseNormalization,
     FeatureWiseStandardization,
     LogMelSpectrogram,
     MFCC,
@@ -61,6 +62,7 @@ class YamlToExperimentConverter:
         "MFCC": MFCC,
         "LogMelSpectrogram": LogMelSpectrogram,
         "DownSampler": DownSampler,
+        "FeatureWiseNormalization": FeatureWiseNormalization,
         "FeatureWiseStandardization": FeatureWiseStandardization,
         "ZeroPadder": ZeroPadder,
         "DataSplitter": DataSplitter,

@@ -1,11 +1,11 @@
-experiment_id: mfcc_sliding_windows_mlp_dummy_standardized
+experiment_id: downsampled_waveform_sliding_windows_lenet_1d_normalized
 
 config:
     type: ExperimentConfig
 
     data_pipeline_config:
         type: DataPipelineConfig
-        name: mfcc_sliding_windows_standardized
+        name: downsampled_waveform_sliding_windows_normalized
         source_reader:
             type: ElderlyCoughAudioSourceReader
             root_path:
@@ -22,14 +22,12 @@ config:
                 - patient_id
                 - cough_audio
         transformer:
-            - type: MFCC
-              sample_rate: 16000
-              n_fft: 512
-              win_length: 400
-              hop_length: 160
-              n_mels: 40
-              n_mfcc: 40
-            - type: FeatureWiseStandardization
+            - type: DownSampler
+              original_sampling_rate: 16000
+              target_sampling_rate: 4000
+              resampling_method: sinc_interp_hann
+              lowpass_filter_width: 6
+            - type: FeatureWiseNormalization
         padder: null
         splitter:
             type: DataSplitter
@@ -40,23 +38,24 @@ config:
 
     model_config:
         type: ModelConfig
-
         architecture:
-            type: MLP
-            linear_dims:
-                - 512
-                - 256
+            type: LeNet1D
+            conv_channels:
+                - 32
+                - 64
                 - 128
+            linear_dims:
+                - 256
+                - 256
             dropout: 0.3
             output_dim: 2
-
         behavior:
             type: ClassificationBehavior
 
     training_config:
         type: TrainingConfig
         random_seed: 42
-        num_epochs: 2
+        num_epochs: 100
         criterion_name: cross_entropy
         optimizer_name: adamw
         learning_rate: 0.0001
@@ -89,8 +88,8 @@ config:
         number_of_validation_model_outputs: 20
         feature_color_percentile: 99.0
         feature_colormap: inferno
-        x_axis_label: Frame
-        y_axis_label: Feature bin
-        colorbar_label: Feature value
-        include_grad_cam: false
+        x_axis_label: Sample
+        y_axis_label: Normalized amplitude
+        colorbar_label: Normalized amplitude
+        include_grad_cam: true
         include_legrad: false

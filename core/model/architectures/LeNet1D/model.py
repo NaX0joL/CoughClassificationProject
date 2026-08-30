@@ -73,6 +73,8 @@ class LeNet1D(ModelArchitecture):
         return
     
     def forward(self, x:Tensor) -> Tensor:  # [batch, seq_len, channels]
+        if x.ndim == 2:
+            x = x.unsqueeze(-1)
         x = x.permute(0, 2, 1)              # [batch, channels, seq_len]
         
         x = self.conv_layers(x)

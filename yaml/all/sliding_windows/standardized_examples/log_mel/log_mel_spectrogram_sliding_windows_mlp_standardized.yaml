@@ -1,11 +1,11 @@
-experiment_id: mfcc_sliding_windows_mlp_dummy_standardized
+experiment_id: log_mel_spectrogram_sliding_windows_mlp_standardized
 
 config:
     type: ExperimentConfig
 
     data_pipeline_config:
         type: DataPipelineConfig
-        name: mfcc_sliding_windows_standardized
+        name: log_mel_spectrogram_sliding_windows_standardized
         source_reader:
             type: ElderlyCoughAudioSourceReader
             root_path:
@@ -22,13 +22,13 @@ config:
                 - patient_id
                 - cough_audio
         transformer:
-            - type: MFCC
+            - type: LogMelSpectrogram
               sample_rate: 16000
               n_fft: 512
               win_length: 400
               hop_length: 160
               n_mels: 40
-              n_mfcc: 40
+              log_offset: 0.000001
             - type: FeatureWiseStandardization
         padder: null
         splitter:
@@ -40,7 +40,6 @@ config:
 
     model_config:
         type: ModelConfig
-
         architecture:
             type: MLP
             linear_dims:
@@ -49,14 +48,13 @@ config:
                 - 128
             dropout: 0.3
             output_dim: 2
-
         behavior:
             type: ClassificationBehavior
 
     training_config:
         type: TrainingConfig
         random_seed: 42
-        num_epochs: 2
+        num_epochs: 100
         criterion_name: cross_entropy
         optimizer_name: adamw
         learning_rate: 0.0001

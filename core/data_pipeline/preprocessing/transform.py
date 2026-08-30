@@ -274,10 +274,14 @@ class DownSampler(Transformer):
         if self.resampler is None:
             return value.copy()
 
-        # Torchaudio expects shape: (..., time), so flip the last two dim
-        waveform = torch.as_tensor(value, dtype=torch.float32).T
+        waveform = torch.as_tensor(value, dtype=torch.float32)
+        is_multi_channel = waveform.ndim > 1
+        if is_multi_channel:
+            waveform = waveform.mT
         resampled = self.resampler(waveform)
-        return resampled.T.numpy()
+        if is_multi_channel:
+            resampled = resampled.mT
+        return resampled.numpy()
 
 
 

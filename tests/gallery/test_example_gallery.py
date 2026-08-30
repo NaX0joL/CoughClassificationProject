@@ -7,7 +7,13 @@ import pytest
 
 from core.data_pipeline.data_pipeline_config import DataPipelineConfig
 from core.data_pipeline.intermediary import Example
-from core.data_pipeline.preprocessing import CoughSegmenter, MFCC, ZeroPadder
+from core.data_pipeline.preprocessing import (
+    CoughSegmenter,
+    FeatureWiseNormalization,
+    FeatureWiseStandardization,
+    MFCC,
+    ZeroPadder,
+)
 from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
 from core.data_pipeline.stratifier import DataSplitter
 from core.gallery.example_gallery import (
@@ -195,6 +201,23 @@ class TestSaveDataPipelineConfig:
 
 
 class TestSaveGallery:
+
+    def test_stateless_transformer_types_produce_different_hashes(self) -> None:
+        normalized_config = _make_config()
+        normalized_config.transformer = [
+            normalized_config.transformer,
+            FeatureWiseNormalization(),
+        ]
+        standardized_config = _make_config()
+        standardized_config.transformer = [
+            standardized_config.transformer,
+            FeatureWiseStandardization(),
+        ]
+
+        normalized_hash = _compute_cache_hash(normalized_config, None)
+        standardized_hash = _compute_cache_hash(standardized_config, None)
+
+        assert normalized_hash != standardized_hash
 
     def test_creates_gallery_folder_with_files(self, tmp_path) -> None:
         examples = [_make_example() for _ in range(5)]

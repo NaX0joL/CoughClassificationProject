@@ -5,6 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from core.data_pipeline.preprocessing import (
+    FeatureWiseNormalization,
     FeatureWiseStandardization,
     LogMelSpectrogram,
     MFCC,
@@ -154,6 +155,28 @@ def test_converter_builds_all_standardized_samples() -> None:
         assert isinstance(transformers, list)
         assert isinstance(transformers[0], (MFCC, LogMelSpectrogram))
         assert isinstance(transformers[1], FeatureWiseStandardization)
+
+
+def test_converter_builds_all_normalized_run_samples() -> None:
+    normalized_yaml_paths = sorted(
+        (
+            PROJECT_ROOT
+            / "yaml"
+            / "run"
+            / "normalized_examples"
+        ).rglob("*.yaml")
+    )
+
+    assert len(normalized_yaml_paths) == 8
+
+    for yaml_path in normalized_yaml_paths:
+        experiment = YamlToExperimentConverter().convert(yaml_path)
+        transformers = experiment.config.data_pipeline_config.transformer
+
+        assert experiment.experiment_id.endswith("_normalized")
+        assert isinstance(transformers, list)
+        assert isinstance(transformers[0], (MFCC, LogMelSpectrogram))
+        assert isinstance(transformers[1], FeatureWiseNormalization)
 
 
 def test_converter_builds_paths_lists_and_nulls(tmp_path:Path) -> None:

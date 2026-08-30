@@ -5,7 +5,7 @@ config:
 
     data_pipeline_config:
         type: DataPipelineConfig
-        name: log_mel_spectrogram_sliding_windows
+        name: log_mel_spectrogram_sliding_windows_standardized
         source_reader:
             type: ElderlyCoughAudioSourceReader
             root_path:
