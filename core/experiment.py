@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
 
+import torch
+
 from modules.resolve_pytorch_device import get_optimal_device
 from modules.randomness import set_random_seed
 
@@ -134,6 +136,7 @@ class ExperimentOrchestrator:
             evaluation = model_evaluator.evaluate(
                 model,
                 development_fold.validation_dataset,
+                batch_size=self.config.training_config.batch_size,
             )
             fold_metrics = evaluation.metrics.to_dict()
             
@@ -150,6 +153,9 @@ class ExperimentOrchestrator:
                 train_dataset=development_fold.train_dataset,
                 validation_dataset=development_fold.validation_dataset,
             )
+            del model
+            if self.device.type == "cuda":
+                torch.cuda.empty_cache()
 
         persistence.save_cross_validation_summary(folds_metrics)
         

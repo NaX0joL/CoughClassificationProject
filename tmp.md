@@ -5,12 +5,27 @@
 - Give a workflow-owning class one public orchestrator method when callers only need one operation.
 - Write the public orchestrator so its statements read like a plain-language summary of the workflow.
 - Keep the public orchestrator at one abstraction level: it coordinates named steps but does not perform their mechanics.
+- Keep simple domain-level loops in the orchestrator when seeing the loop makes the workflow easier to understand.
 - Make each helper perform only the step described by its name.
 - Helpers must return control to their caller and must not trigger a later workflow stage themselves.
+
+## Barebone readability
+
+- Prefer the smallest implementation that a beginner can understand in one reading.
+- Keep the main data flow visible; do not hide a short, important sequence behind several layers of forwarding methods.
+- Split a large workflow class only when it owns distinct responsibilities or policies.
+- Give each resulting collaborator one clear responsibility and one primary public operation.
+- Use ordinary classes with explicit constructors for objects that perform work or coordinate dependencies.
+- Reserve dataclasses for passive data containers whose main purpose is storing values.
+- Avoid intermediary classes, wrapper objects, and configuration objects unless they remove real ambiguity or enforce an important invariant.
+- Avoid chains of tiny helpers. A leaf helper may contain a short cohesive block of related mechanics.
+- Prefer direct names such as `OuterFoldSplitter` and `DevelopmentSplitter` that state exactly what each collaborator does.
+- Preserve the existing public constructor and output shape during structural simplification unless the requested change requires otherwise.
 
 ## Abstraction levels
 
 - Put raw mechanics only in leaf helpers. Examples include opening files, parsing external data, iterating through raw collections, looking up registry entries, calling constructors, and invoking external processes.
+- Distinguish raw-collection loops from domain-workflow loops: raw parsing belongs in a leaf helper, while a short loop over folds, stages, or tasks may remain visible in the orchestrator.
 - Keep orchestration methods free from parsing details, type branching, constructor arguments, and error-handling mechanics.
 - When a helper mixes coordination and mechanics, extract the mechanics into a clearly named leaf helper.
 - Do not extract a helper that merely renames one obvious expression unless doing so is necessary to keep its caller at a consistent abstraction level.

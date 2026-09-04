@@ -1,5 +1,6 @@
-"""Recalculate metrics for saved mpkg models and save them in Excel."""
+"""Collect metrics from saved mpkg models and save them in Excel."""
 
+import json
 import os
 import sys
 
@@ -75,6 +76,46 @@ def find_mpkg_folders(folder):
     return mpkg_folders
 
 
+def extract_one_mpkg(mpkg_folder, metric_names=None):
+    """Return the metrics already stored for every fold in an mpkg folder."""
+    print(f"Extracting {mpkg_folder.name}...")
+
+    metric_paths = sorted(
+        (mpkg_folder / "json" / "metrics").glob("metrics-fold_*.json"),
+        key=_get_fold_index,
+    )
+    if not metric_paths:
+        raise FileNotFoundError(f"No saved fold metrics found in: {mpkg_folder}")
+
+    fold_rows = []
+    for metric_path in metric_paths:
+        with metric_path.open(encoding="utf-8") as metric_file:
+            stored_metrics = json.load(metric_file)
+        if not isinstance(stored_metrics, dict):
+            raise ValueError(f"Saved fold metrics must be a dictionary: {metric_path}")
+
+        selected_metrics = stored_metrics
+        if metric_names is not None:
+            missing_metric_names = set(metric_names) - stored_metrics.keys()
+            if missing_metric_names:
+                missing_metrics = ", ".join(sorted(missing_metric_names))
+                raise ValueError(
+                    f"Saved metrics are missing {missing_metrics}: {metric_path}"
+                )
+            selected_metrics = {
+                name: stored_metrics[name]
+                for name in metric_names
+            }
+
+        fold_rows.append({
+            "mpkg": mpkg_folder.name,
+            "folder": str(mpkg_folder),
+            "fold": _get_fold_index(metric_path),
+            **selected_metrics,
+        })
+    return fold_rows
+
+
 def recompute_one_mpkg(mpkg_folder, metrics_config):
     """Return one row of metrics for every saved fold in an mpkg folder."""
     print(f"Checking {mpkg_folder.name}...")
@@ -137,37 +178,54 @@ def save_excel(summary_table, fold_table, excel_path):
         fold_table.to_excel(writer, sheet_name="fold_metrics", index=False)
 
 
+def _get_fold_index(metric_path):
+    return int(metric_path.stem.removeprefix("metrics-fold_"))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("folder", type=Path, help="Folder containing mpkg runs")
     parser.add_argument("--output", type=Path, help="Where to save the Excel file")
+    parser.add_argument(
+        "--recompute",
+        action="store_true",
+        help="Re-evaluate saved models instead of extracting stored metrics",
+    )
     parser.add_argument(
         "--metrics",
         nargs="+",
         choices=METRICS_BY_NAME,
         metavar="METRIC",
         help=(
-            "Metrics to calculate instead of DEFAULT_METRICS. Choices: "
+            "Stored metrics to include, or metrics to calculate with --recompute. "
+            "Choices: "
             + ", ".join(METRICS_BY_NAME)
         ),
     )
     args = parser.parse_args()
 
     mpkg_folders = find_mpkg_folders(args.folder)
-    selected_metric_names = args.metrics or [
-        name for name, is_enabled in DEFAULT_METRICS.items() if is_enabled
-    ]
-    if not selected_metric_names:
-        parser.error("Enable at least one metric in DEFAULT_METRICS or use --metrics")
-    selected_metrics_config = MetricsConfig(
-        metrics=tuple(
-            METRICS_BY_NAME[name]() for name in selected_metric_names
-        ),
-    )
-
     fold_rows = []
-    for mpkg_folder in mpkg_folders:
-        fold_rows.extend(recompute_one_mpkg(mpkg_folder, selected_metrics_config))
+    if args.recompute:
+        selected_metric_names = args.metrics or [
+            name for name, is_enabled in DEFAULT_METRICS.items() if is_enabled
+        ]
+        if not selected_metric_names:
+            parser.error(
+                "Enable at least one metric in DEFAULT_METRICS or use --metrics"
+            )
+        selected_metrics_config = MetricsConfig(
+            metrics=tuple(
+                METRICS_BY_NAME[name]() for name in selected_metric_names
+            ),
+        )
+        for mpkg_folder in mpkg_folders:
+            fold_rows.extend(
+                recompute_one_mpkg(mpkg_folder, selected_metrics_config)
+            )
+    else:
+        for mpkg_folder in mpkg_folders:
+            fold_rows.extend(extract_one_mpkg(mpkg_folder, args.metrics))
 
     # Make a table with one row per fold.
     fold_table = pd.DataFrame(fold_rows).sort_values(["mpkg", "fold"])

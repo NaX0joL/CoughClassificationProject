@@ -143,7 +143,7 @@ uv run python main.py
 - `main.py` — default experiment
 - `scripts/training/train_*.py` — individual data-pipeline × model combos
 - `scripts/training/scripts_orchestrator.py` — batch run queued scripts
-- `scripts/analysis/recompute_mpkg_metrics.py` — re-evaluate saved model packages
+- `scripts/analysis/recompute_mpkg_metrics.py` — collect or re-evaluate saved model-package metrics
 
 ## Dataset
 
