@@ -2,6 +2,7 @@ from pathlib import Path
 
 from ._utils.metadata_reader import MetadataReader
 from ._utils.metadata_translator import MetadataTranslator
+from ._utils.metadata_excluder import MetadataExcluder
 
 from ...intermediary import SourceRecord
 
@@ -29,13 +30,15 @@ class SourceReader():
         
         self.metadata_reader = MetadataReader(path=metadata_path, sheet_name=excel_sheet_name)
         self.metadata_translator = MetadataTranslator(path=translation_path)
+        self.metadata_excluder = MetadataExcluder()
         return
     
     def get_source_data(self) -> list[SourceRecord]:
-        metadata = self.metadata_reader.read()
-        translated = self.metadata_translator.translate(metadata)
+        metadatas = self.metadata_reader.read()
+        translated = self.metadata_translator.translate(metadatas)
+        excluded = self.metadata_excluder.exclude(translated)
         audio_files_paths = self._collect_all_audio_file_paths()
-        source_records = self._make_source_records(metadatas=translated, audio_paths=audio_files_paths)
+        source_records = self._make_source_records(metadatas=excluded, audio_paths=audio_files_paths)
         return source_records
     
     def _collect_all_audio_file_paths(self) -> list[Path]:

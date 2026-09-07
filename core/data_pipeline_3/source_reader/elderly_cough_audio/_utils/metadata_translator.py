@@ -12,13 +12,13 @@ class MetadataTranslator():
         self.path = path
         return
     
-    def translate(self, metadata:list[dict]) -> list[dict]:
+    def translate(self, metadatas:list[dict]) -> list[dict]:
         translation = self._load_translation()
         
-        for index in range(len(metadata)):
-            metadata[index] = self._translate_entry(metadata[index], translation)
+        for index in range(len(metadatas)):
+            metadatas[index] = self._translate_entry(metadatas[index], translation)
 
-        return metadata
+        return metadatas
     
     def _load_translation(self) -> dict:
         with self.path.open("r", encoding="utf-8") as file:
