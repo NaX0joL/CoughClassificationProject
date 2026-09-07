@@ -18,6 +18,7 @@ class ExampleDataset(Dataset):
     def __getitem__(self, index:int) -> dict[str, Tensor|dict[str, str]]:
         example = self.examples[index]
         original_label = example.metadata.get(ORIGINAL_LABEL_METADATA_KEY)
+        
         metadata = {
             ORIGINAL_LABEL_METADATA_KEY: (
                 str(original_label)
