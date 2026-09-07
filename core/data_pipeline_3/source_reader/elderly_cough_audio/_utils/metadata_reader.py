@@ -103,11 +103,11 @@ class ManualColumnNormalizer():
         
         value = value.lower()        
         if value == "true":
-            dict[key] = True
+            value = True
         elif value == "false":
-            dict[key] = False
+            value = False
         elif value == "broken":
-            dict[key] = False
+            value = False
         else:
             raise ValueError(f"metadata key {key} has invalid value: {value}")
         

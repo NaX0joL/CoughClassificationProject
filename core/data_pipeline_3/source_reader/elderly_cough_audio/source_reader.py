@@ -4,6 +4,7 @@ from ._utils.metadata_reader import MetadataReader
 from ._utils.metadata_translator import MetadataTranslator
 from ._utils.metadata_excluder import MetadataExcluder
 
+from ...abstract import AbstractSourceReader
 from ...intermediary import SourceRecord
 
 
@@ -17,7 +18,7 @@ DEFAULT_EXCEL_SHEET_NAME = "dynamo"
 
 
 
-class SourceReader():
+class SourceReader(AbstractSourceReader):
     
     def __init__(
         self,
@@ -33,7 +34,7 @@ class SourceReader():
         self.metadata_excluder = MetadataExcluder()
         return
     
-    def get_source_data(self) -> list[SourceRecord]:
+    def get_source_records(self) -> list[SourceRecord]:
         metadatas = self.metadata_reader.read()
         translated = self.metadata_translator.translate(metadatas)
         excluded = self.metadata_excluder.exclude(translated)

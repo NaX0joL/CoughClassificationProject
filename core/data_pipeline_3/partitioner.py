@@ -2,10 +2,10 @@ from sklearn.model_selection import StratifiedGroupKFold
 import numpy as np
 
 from .intermediary import FoldPartition, SourceRecord
+from .abstract import AbstractPartitioner
 
 
-
-class Partitioner:
+class Partitioner(AbstractPartitioner):
 
     def __init__(
         self,
