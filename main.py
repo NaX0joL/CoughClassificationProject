@@ -10,6 +10,7 @@ def main():
         source_reader=SourceReader(),
         partitioner=Partitioner(),
     )
+    pipeline.get_data_module()
     return
 
 

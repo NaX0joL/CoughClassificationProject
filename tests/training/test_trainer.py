@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from core.data_pipeline.dataset import ExampleDataset
-from core.data_pipeline.intermediary import Example
+from core.data_pipeline_3.dataset import ExampleDataset
+from core.data_pipeline_3.intermediary import Example
 from core.training.trainer import build_criterion
 from core.training.training_config import TrainingConfig
 

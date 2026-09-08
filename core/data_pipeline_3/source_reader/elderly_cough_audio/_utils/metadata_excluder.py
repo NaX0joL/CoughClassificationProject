@@ -10,7 +10,7 @@ class MetadataExcluder():
         filtered = []
         
         for metadata in metadatas:
-            metadata = self._filter_based_on_Usability(metadata)
+            metadata = self._filter_based_on_Audio_exists(metadata)
             metadata = self._filter_based_on_isInfectious(metadata)
             metadata = self._filter_based_on_Usability(metadata)
             
