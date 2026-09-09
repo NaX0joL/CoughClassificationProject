@@ -1,5 +1,7 @@
 import json
+from collections.abc import Iterable
 from pathlib import Path
+from typing import cast
 
 import matplotlib
 
@@ -7,12 +9,17 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
+from torch.utils.data import DataLoader
 
 from ..data_pipeline.data_pipeline_config import DataPipelineConfig
 from ..data_pipeline.intermediary import DataSplit, Example
 from ..metrics.evaluation import BINARY_CLASS_NAMES
 
-from .gallery_directory import GALLERY_DIRECTORY, resolve_gallery_directory
+from .gallery_directory import (
+    GALLERY_DIRECTORY,
+    GalleryDataConfig,
+    resolve_gallery_directory,
+)
 
 
 
@@ -22,6 +29,7 @@ OVERALL_SPLIT_NAME = "overall"
 TEST_SPLIT_NAME = "test"
 TRAIN_SPLIT_SUFFIX = "-train"
 VALIDATION_SPLIT_SUFFIX = "-val"
+TEST_SPLIT_SUFFIX = "-test"
 CLASS_BAR_COLORS = ["tab:blue", "tab:orange"]
 COUNT_ANNOTATION_FONTSIZE = 8
 
@@ -31,7 +39,7 @@ class ClassDistributionGenerator:
 
     def __init__(
         self,
-        data_pipeline_config:DataPipelineConfig,
+        data_pipeline_config:DataPipelineConfig|GalleryDataConfig,
         gallery_directory:Path=GALLERY_DIRECTORY,
         class_names:dict[int, str]|None=None,
         regenerate:bool=False,
@@ -40,9 +48,52 @@ class ClassDistributionGenerator:
         self.gallery_directory = gallery_directory
         self.class_names = class_names
         self.regenerate = regenerate
+        self.fold_counts:dict[str, dict[int, int]] = {}
         return
 
     def generate(self, data_split:DataSplit) -> Path:
+        return self._generate(collect_class_counts(data_split))
+
+    def generate_from_dataloaders(
+        self,
+        train_loader:DataLoader,
+        validation_loader:DataLoader,
+        test_loader:DataLoader,
+    ) -> Path:
+        self.collect_from_dataloaders(
+            fold_index=1,
+            train_loader=train_loader,
+            validation_loader=validation_loader,
+            test_loader=test_loader,
+        )
+        return self.generate_collected()
+
+    def collect_from_dataloaders(
+        self,
+        fold_index:int,
+        train_loader:DataLoader,
+        validation_loader:DataLoader,
+        test_loader:DataLoader,
+    ) -> None:
+        self.fold_counts.update(collect_fold_class_counts_from_dataloaders(
+            fold_index,
+            train_loader,
+            validation_loader,
+            test_loader,
+        ))
+        return
+
+    def generate_collected(self) -> Path:
+        if not self.fold_counts:
+            raise ValueError("at least one fold must be collected")
+
+        counts = {
+            OVERALL_SPLIT_NAME: _sum_class_counts(self.fold_counts.values()),
+            **self.fold_counts,
+        }
+        return self._generate(counts)
+
+    def _generate(self, counts:dict[str, dict[int, int]]) -> Path:
         gallery_dir = resolve_gallery_directory(
             self.data_pipeline_config,
             self.gallery_directory,
@@ -58,7 +109,6 @@ class ClassDistributionGenerator:
             if self.class_names is not None
             else BINARY_CLASS_NAMES
         )
-        counts = collect_class_counts(data_split)
 
         save_class_distribution_figure(
             counts=counts,
@@ -94,6 +144,42 @@ def collect_class_counts(data_split:DataSplit) -> dict[str, dict[int, int]]:
         raise ValueError("data_split must contain at least one example")
 
     return counts
+
+
+def collect_class_counts_from_dataloaders(
+    train_loader:DataLoader,
+    validation_loader:DataLoader,
+    test_loader:DataLoader,
+) -> dict[str, dict[int, int]]:
+    fold_counts = collect_fold_class_counts_from_dataloaders(
+        1,
+        train_loader,
+        validation_loader,
+        test_loader,
+    )
+    return {
+        OVERALL_SPLIT_NAME: _sum_class_counts(fold_counts.values()),
+        **fold_counts,
+    }
+
+
+def collect_fold_class_counts_from_dataloaders(
+    fold_index:int,
+    train_loader:DataLoader,
+    validation_loader:DataLoader,
+    test_loader:DataLoader,
+) -> dict[str, dict[int, int]]:
+    train_examples = _get_dataloader_examples(train_loader)
+    validation_examples = _get_dataloader_examples(validation_loader)
+    test_examples = _get_dataloader_examples(test_loader)
+    fold_prefix = f"fold_{fold_index}"
+    return {
+        f"{fold_prefix}{TRAIN_SPLIT_SUFFIX}": _count_labels(train_examples),
+        f"{fold_prefix}{VALIDATION_SPLIT_SUFFIX}": _count_labels(
+            validation_examples,
+        ),
+        f"{fold_prefix}{TEST_SPLIT_SUFFIX}": _count_labels(test_examples),
+    }
 
 
 def save_class_distribution_figure(
@@ -152,6 +238,23 @@ def _count_labels(examples:list[Example]) -> dict[int, int]:
     return counts
 
 
+def _sum_class_counts(
+    split_counts:Iterable[dict[int, int]],
+) -> dict[int, int]:
+    total_counts:dict[int, int] = {}
+    for counts in split_counts:
+        for label, count in counts.items():
+            total_counts[label] = total_counts.get(label, 0) + count
+    return total_counts
+
+
+def _get_dataloader_examples(data_loader:DataLoader) -> list[Example]:
+    examples = getattr(data_loader.dataset, "examples", None)
+    if not isinstance(examples, list):
+        raise TypeError("data loader dataset must expose an examples list")
+    return cast(list[Example], examples)
+
+
 def _summarize_split(
     split_counts:dict[int, int],
     class_names:dict[int, str]|None,
@@ -196,8 +299,12 @@ def _plot_per_split_counts(
     counts:dict[str, dict[int, int]],
     class_names:dict[int, str]|None,
 ) -> None:
-    split_names = list(counts)
-    labels = sorted({label for split in counts.values() for label in split})
+    split_names = [
+        name
+        for name in counts
+        if name != OVERALL_SPLIT_NAME
+    ]
+    labels = sorted({label for name in split_names for label in counts[name]})
     positions = np.arange(len(split_names))
     bar_width = 0.8 / max(len(labels), 1)
 

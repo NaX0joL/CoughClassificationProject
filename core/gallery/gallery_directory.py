@@ -1,5 +1,6 @@
 import hashlib
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -11,25 +12,42 @@ GALLERY_DIRECTORY = Path("outputs/gallery")
 
 
 
+@dataclass(frozen=True)
+class GalleryDataConfig:
+    components:dict[str, Any]
+    name:str|None=None
+
+
+
 def compute_config_hash(
-    config:DataPipelineConfig,
+    config:DataPipelineConfig|GalleryDataConfig,
     random_seed:int|None,
 ) -> str:
-    representation = {
-        "name": config.name,
-        "source_reader": _extract_init_params(config.source_reader),
-        "segmenter": _extract_init_params(config.segmenter),
-        "transformer": _extract_transformer_params(config.transformer),
-        "padder": _extract_init_params(config.padder),
-        "splitter": _extract_init_params(config.splitter),
-        "seed": random_seed,
-    }
+    if isinstance(config, GalleryDataConfig):
+        representation = {
+            "name": config.name,
+            "components": {
+                name: _extract_config_value(component)
+                for name, component in config.components.items()
+            },
+            "seed": random_seed,
+        }
+    else:
+        representation = {
+            "name": config.name,
+            "source_reader": _extract_init_params(config.source_reader),
+            "segmenter": _extract_init_params(config.segmenter),
+            "transformer": _extract_transformer_params(config.transformer),
+            "padder": _extract_init_params(config.padder),
+            "splitter": _extract_init_params(config.splitter),
+            "seed": random_seed,
+        }
     data = json.dumps(representation, sort_keys=True, default=str).encode()
     return hashlib.sha256(data).hexdigest()[:12]
 
 
 def resolve_gallery_directory(
-    config:DataPipelineConfig,
+    config:DataPipelineConfig|GalleryDataConfig,
     gallery_directory:Path,
 ) -> Path:
     config_hash = compute_config_hash(config, None)
@@ -68,6 +86,14 @@ def _extract_init_params(component:Any) -> dict[str, Any]|None:
         "type": f"{component.__class__.__module__}.{component.__class__.__qualname__}",
         "parameters": parameters,
     }
+
+
+def _extract_config_value(value:Any) -> Any:
+    if _is_hashable_primitive(value):
+        return value
+    if isinstance(value, list):
+        return [_extract_config_value(item) for item in value]
+    return _extract_init_params(value)
 
 
 def _extract_transformer_params(

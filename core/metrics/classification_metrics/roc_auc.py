@@ -1,3 +1,6 @@
+import warnings
+
+from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import roc_auc_score
 
 from .abstract import ClassificationMetric, ClassificationMetricInput
@@ -7,6 +10,11 @@ class RocAucMetric(ClassificationMetric):
     name = "roc_auc"
 
     def calculate(self, metric_input:ClassificationMetricInput) -> float:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UndefinedMetricWarning)
+            return self._calculate(metric_input)
+
+    def _calculate(self, metric_input:ClassificationMetricInput) -> float:
         if len(metric_input.class_labels) == 2:
             return float(roc_auc_score(
                 metric_input.labels,

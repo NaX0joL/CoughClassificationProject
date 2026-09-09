@@ -12,8 +12,15 @@ class AudioFileReader():
         return
     
     def read(self, path:Path) -> np.ndarray:
-        waveform, original_sample_rate = torchaudio.load(str(path))
-        waveform = waveform.mean(dim=0)     # reduce dim to 1 for mono
+        
+        try:
+            waveform, original_sample_rate = torchaudio.load(str(path))
+            waveform = waveform.mean(dim=0)     # reduce dim to 1 for mono
+        except:
+            raise ValueError(f"could not decode audio file: {path}")
+        
+        if waveform.numel() == 0 or waveform.shape[-1] == 0:
+            raise ValueError(f"audio file contains no samples: {path}")
         
         if original_sample_rate != self.sampling_rate:
             waveform = audio_functional.resample(

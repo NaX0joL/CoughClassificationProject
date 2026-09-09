@@ -8,6 +8,7 @@ import numpy as np
 class SourceRecord:
     metadata:dict[str, object]
     audio_path:Path
+    label:int
 
 
 @dataclass(frozen=True)

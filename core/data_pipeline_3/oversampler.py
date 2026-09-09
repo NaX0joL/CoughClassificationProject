@@ -8,6 +8,7 @@ from .intermediary import Example
 class UniformOversampler():
 
     def __init__(self, random_seed:int|None=None) -> None:
+        self.random_seed = random_seed
         self.oversampler = RandomOverSampler(random_state=random_seed)
         return
 

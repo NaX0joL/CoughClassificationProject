@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from core.experiment import ExperimentOrchestrator
+from core.experiment_old import ExperimentOrchestrator
 
 
 
@@ -81,31 +81,31 @@ def test_cross_validation_reuses_training_batch_size_and_releases_each_fold(
     )
 
     monkeypatch.setattr(
-        "core.experiment.ExperimentPersistence.create",
+        "core.experiment_old.ExperimentPersistence.create",
         lambda **kwargs: persistence,
     )
     monkeypatch.setattr(
-        "core.experiment.DataPipeline.create",
+        "core.experiment_old.DataPipeline.create",
         lambda config: pipeline,
     )
     monkeypatch.setattr(
-        "core.experiment.ExampleGalleryGenerator",
+        "core.experiment_old.ExampleGalleryGenerator",
         lambda **kwargs: SimpleNamespace(generate=lambda examples: None),
     )
     monkeypatch.setattr(
-        "core.experiment.ClassDistributionGenerator",
+        "core.experiment_old.ClassDistributionGenerator",
         lambda **kwargs: SimpleNamespace(generate=lambda data_split: None),
     )
     monkeypatch.setattr(
-        "core.experiment.ModelEvaluator",
+        "core.experiment_old.ModelEvaluator",
         lambda config: Evaluator(),
     )
     monkeypatch.setattr(
-        "core.experiment.FullModel",
+        "core.experiment_old.FullModel",
         SimpleNamespace(create=create_model),
     )
     monkeypatch.setattr(
-        "core.experiment.torch.cuda.empty_cache",
+        "core.experiment_old.torch.cuda.empty_cache",
         lambda: events.append("empty-cache"),
     )
 

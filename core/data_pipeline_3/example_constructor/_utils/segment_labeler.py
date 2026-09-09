@@ -41,7 +41,7 @@ class OverlapLabeler():
         
         for cough_start, cough_end in cough_intervals:
             overlap_start = max(segment_start, cough_start)
-            overlap_end = min(segment_end, cough_end)
+            overlap_end = min(segment_end, cough_end + 1)
             
             overlap_size = max(0, overlap_end - overlap_start)
             overlap_ratio = overlap_size / segment_size

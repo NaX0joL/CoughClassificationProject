@@ -26,6 +26,10 @@ def save_fold_figures(
     train_dataset:ExampleDataset,
     validation_dataset:ExampleDataset,
     persistence_config:PersistenceConfig,
+    additional_confusion_matrices:dict[
+        str,
+        tuple[np.ndarray, np.ndarray],
+    ]|None=None,
 ) -> None:
     _save_loss_figure(figures_directory, fold_index, loss_log)
     _save_confusion_matrix(
@@ -34,7 +38,19 @@ def save_fold_figures(
         labels,
         predictions,
         class_names,
+        "test",
     )
+    for split_name, (split_labels, split_predictions) in (
+        additional_confusion_matrices or {}
+    ).items():
+        _save_confusion_matrix(
+            figures_directory,
+            fold_index,
+            split_labels,
+            split_predictions,
+            class_names,
+            split_name,
+        )
     save_model_output_pdfs(
         figures_directory,
         fold_index,
@@ -72,8 +88,12 @@ def _save_confusion_matrix(
     labels:np.ndarray,
     predictions:np.ndarray,
     class_names:dict[int, str],
+    split_name:str|None=None,
 ) -> None:
-    class_labels = np.unique(np.concatenate((labels, predictions)))
+    configured_labels = np.asarray(list(class_names))
+    class_labels = np.unique(
+        np.concatenate((configured_labels, labels, predictions)),
+    )
     matrix = confusion_matrix(labels, predictions, labels=class_labels)
     display_labels = [class_names.get(int(label), str(label)) for label in class_labels]
 
@@ -81,7 +101,7 @@ def _save_confusion_matrix(
     image = axis.imshow(matrix, cmap="Blues")
     figure.colorbar(image, ax=axis, label="Count")
     axis.set(
-        title=f"Confusion matrix: fold {fold_index}",
+        title=_confusion_matrix_title(fold_index, split_name),
         xlabel="Predicted label",
         ylabel="True label",
         xticks=range(len(class_labels)),
@@ -101,8 +121,26 @@ def _save_confusion_matrix(
         )
     figure.tight_layout()
     figure.savefig(
-        figures_directory / "confusion_matrix" / f"confusion_matrix-fold_{fold_index}.png",
+        _confusion_matrix_path(figures_directory, fold_index, split_name),
         dpi=150,
     )
     plt.close(figure)
     return
+
+
+def _confusion_matrix_title(fold_index:int, split_name:str|None) -> str:
+    if split_name is None:
+        return f"Confusion matrix: fold {fold_index}"
+    return f"Confusion matrix ({split_name}): fold {fold_index}"
+
+
+def _confusion_matrix_path(
+    figures_directory:Path,
+    fold_index:int,
+    split_name:str|None,
+) -> Path:
+    if split_name is None:
+        file_name = f"confusion_matrix-fold_{fold_index}.png"
+    else:
+        file_name = f"confusion_matrix-{split_name}-fold_{fold_index}.png"
+    return figures_directory / "confusion_matrix" / file_name

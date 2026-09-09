@@ -42,12 +42,29 @@ class ModelEvaluator:
         dataset:ExampleDataset,
         batch_size:int=32,
     ) -> ModelEvaluation:
+        data_loader = DataLoader(
+            dataset=dataset,
+            batch_size=batch_size,
+            shuffle=False,
+        )
+        return self.evaluate_dataloader(model, data_loader)
+
+    def evaluate_dataloader(
+        self,
+        model:FullModel,
+        data_loader:DataLoader,
+    ) -> ModelEvaluation:
         labels, predictions, probabilities, original_labels = self._collect_outputs(
             model,
-            dataset,
-            batch_size,
+            data_loader,
         )
-        metrics = self.metrics_calculator.calculate(labels, predictions, probabilities)
+        class_labels = np.arange(probabilities.shape[1])
+        metrics = self.metrics_calculator.calculate(
+            labels,
+            predictions,
+            probabilities,
+            class_labels,
+        )
         return ModelEvaluation(
             metrics=metrics,
             labels=labels,
@@ -58,21 +75,19 @@ class ModelEvaluator:
     def _collect_outputs(
         self,
         model:FullModel,
-        dataset:ExampleDataset,
-        batch_size:int,
+        data_loader:DataLoader,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str]]:
         all_labels:list[np.ndarray] = []
         all_predictions:list[np.ndarray] = []
         all_probabilities:list[np.ndarray] = []
         all_original_labels:list[str] = []
-        loader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False)
         device = get_model_device(model)
         was_training = model.training
         model.eval()
 
         try:
             with torch.inference_mode():
-                for batch in loader:
+                for batch in data_loader:
                     values:Tensor = batch["value"].to(device)
                     labels:Tensor = batch["label"]
                     probabilities = model.predict_probabilities(values)
@@ -102,6 +117,8 @@ def _get_original_labels(batch:dict[str, object]) -> list[str]:
         raise ValueError("evaluation batch must include metadata")
 
     original_labels = metadata.get(ORIGINAL_LABEL_METADATA_KEY)
+    if original_labels is None:
+        original_labels = metadata.get("isInfectious")
     if not isinstance(original_labels, (list, tuple)):
         raise ValueError("evaluation metadata must include original labels")
 

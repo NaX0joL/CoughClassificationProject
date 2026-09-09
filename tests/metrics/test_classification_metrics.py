@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pytest
 
@@ -6,6 +8,8 @@ from core.metrics import (
     ClassificationMetricsCalculator,
     F1ScoreMetric,
     MetricsConfig,
+    PRAucMetric,
+    RocAucMetric,
     calculate_classification_metrics,
 )
 
@@ -81,6 +85,29 @@ def test_calculate_classification_metrics_requires_labels_for_missing_classes() 
 
     with pytest.raises(ValueError, match="class_labels is required"):
         calculate_classification_metrics(labels, predictions, probabilities)
+
+
+def test_auc_metrics_do_not_warn_when_an_expected_class_is_absent() -> None:
+    labels = np.array([1, 2, 1, 2])
+    predictions = np.array([1, 2, 1, 2])
+    probabilities = np.array([
+        [0.1, 0.8, 0.1],
+        [0.1, 0.1, 0.8],
+        [0.2, 0.7, 0.1],
+        [0.2, 0.1, 0.7],
+    ])
+
+    with warnings.catch_warnings(record=True) as caught_warnings:
+        warnings.simplefilter("always")
+        calculate_classification_metrics(
+            labels,
+            predictions,
+            probabilities,
+            class_labels=np.array([0, 1, 2]),
+            metrics=[RocAucMetric(), PRAucMetric()],
+        )
+
+    assert caught_warnings == []
 
 
 def test_metrics_calculator_calculates_only_selected_metric_instances() -> None:

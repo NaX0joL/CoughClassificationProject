@@ -4,8 +4,10 @@ import json
 import matplotlib
 matplotlib.use("Agg")
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from torch.utils.data import DataLoader
 
 from core.data_pipeline.data_pipeline_config import DataPipelineConfig
 from core.data_pipeline.dataset import ExampleDataset
@@ -16,6 +18,7 @@ from core.data_pipeline.stratifier import DataSplitter
 from core.gallery.gallery_directory import compute_config_hash
 from core.gallery.class_distribution import (
     ClassDistributionGenerator,
+    _plot_per_split_counts,
     collect_class_counts,
     save_class_distribution_figure,
     save_class_distribution_json,
@@ -140,8 +143,74 @@ class TestSaveClassDistributionFigure:
         assert path.exists()
         assert path.stat().st_size > 0
 
+    def test_lower_plot_excludes_overall_summary(self) -> None:
+        figure, axis = plt.subplots()
+        counts = {
+            "overall": {0: 4, 1: 4},
+            "fold_1-train": {0: 2, 1: 2},
+            "fold_1-val": {0: 1, 1: 1},
+            "fold_1-test": {0: 1, 1: 1},
+        }
+
+        _plot_per_split_counts(axis, counts, class_names=None)
+
+        tick_labels = [tick.get_text() for tick in axis.get_xticklabels()]
+        plt.close(figure)
+        assert tick_labels == ["fold_1-train", "fold_1-val", "fold_1-test"]
+
 
 class TestClassDistributionGenerator:
+
+    def test_generates_from_dataloaders(self, tmp_path) -> None:
+        generator = ClassDistributionGenerator(
+            data_pipeline_config=_make_config(),
+            gallery_directory=tmp_path / "gallery",
+        )
+
+        result_path = generator.generate_from_dataloaders(
+            train_loader=DataLoader(_make_dataset([0, 0, 1])),
+            validation_loader=DataLoader(_make_dataset([0, 1])),
+            test_loader=DataLoader(_make_dataset([1])),
+        )
+
+        payload = json.loads(
+            (result_path.parent / "class_distribution.json").read_text(
+                encoding="utf-8",
+            )
+        )
+        assert payload["splits"]["overall"]["total"] == 6
+        assert payload["splits"]["fold_1-train"]["total"] == 3
+        assert payload["splits"]["fold_1-val"]["total"] == 2
+        assert payload["splits"]["fold_1-test"]["total"] == 1
+
+    def test_collects_multiple_dataloader_folds(self, tmp_path) -> None:
+        generator = ClassDistributionGenerator(
+            data_pipeline_config=_make_config(),
+            gallery_directory=tmp_path / "gallery",
+        )
+        generator.collect_from_dataloaders(
+            fold_index=1,
+            train_loader=DataLoader(_make_dataset([0, 1])),
+            validation_loader=DataLoader(_make_dataset([0])),
+            test_loader=DataLoader(_make_dataset([1])),
+        )
+        generator.collect_from_dataloaders(
+            fold_index=2,
+            train_loader=DataLoader(_make_dataset([0, 1])),
+            validation_loader=DataLoader(_make_dataset([1])),
+            test_loader=DataLoader(_make_dataset([0])),
+        )
+
+        result_path = generator.generate_collected()
+
+        payload = json.loads(
+            (result_path.parent / "class_distribution.json").read_text(
+                encoding="utf-8",
+            )
+        )
+        assert payload["splits"]["overall"]["total"] == 8
+        assert payload["splits"]["fold_1-test"]["total"] == 1
+        assert payload["splits"]["fold_2-test"]["total"] == 1
 
     def test_creates_files_in_hash_named_folder(self, tmp_path) -> None:
         generator = ClassDistributionGenerator(

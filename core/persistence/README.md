@@ -37,7 +37,9 @@ load path:
 ├── config.txt                         human-readable formatted config
 ├── figures/
 │   ├── loss/loss-fold_<N>.png         train/validation loss curves
-│   ├── confusion_matrix/confusion_matrix-fold_<N>.png
+│   ├── confusion_matrix/confusion_matrix-test-fold_<N>.png
+│   ├── confusion_matrix/confusion_matrix-train-fold_<N>.png
+│   ├── confusion_matrix/confusion_matrix-validation-fold_<N>.png
 │   ├── output_train/fold_<N>-train.pdf        per-sample model-output PDFs
 │   └── output_validation/fold_<N>-validation.pdf
 ├── json/

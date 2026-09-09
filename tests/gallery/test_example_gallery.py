@@ -4,8 +4,10 @@ matplotlib.use("Agg")
 
 import numpy as np
 import pytest
+from torch.utils.data import DataLoader
 
 from core.data_pipeline.data_pipeline_config import DataPipelineConfig
+from core.data_pipeline.dataset import ExampleDataset
 from core.data_pipeline.intermediary import Example
 from core.data_pipeline.preprocessing import (
     CoughSegmenter,
@@ -16,6 +18,8 @@ from core.data_pipeline.preprocessing import (
 )
 from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
 from core.data_pipeline.stratifier import DataSplitter
+from core.data_pipeline_3.intermediary import Example as Example3
+from core.data_pipeline_3.oversampler import UniformOversampler
 from core.gallery.example_gallery import (
     ExampleGalleryGenerator,
     save_data_pipeline_config,
@@ -23,6 +27,7 @@ from core.gallery.example_gallery import (
     _select_example_indices,
     _compute_cache_hash,
 )
+from core.gallery.gallery_directory import GalleryDataConfig
 
 
 def _make_example(length:int=100, n_features:int=10, label:int=0) -> Example:
@@ -199,6 +204,25 @@ class TestSaveDataPipelineConfig:
         assert "ElderlyCoughAudioSourceReader" in content
         assert "MFCC" in content
 
+    def test_formats_fitted_v3_oversampler(self, tmp_path) -> None:
+        oversampler = UniformOversampler(random_seed=42)
+        oversampler.oversample([
+            Example3(value=np.asarray([0]), label=0, metadata={}),
+            Example3(value=np.asarray([1]), label=0, metadata={}),
+            Example3(value=np.asarray([2]), label=1, metadata={}),
+        ])
+        config = GalleryDataConfig(
+            components={"oversampler": oversampler},
+            name="test_v3",
+        )
+        path = tmp_path / "config.txt"
+
+        save_data_pipeline_config(config, path)
+
+        content = path.read_text(encoding="utf-8")
+        assert "UniformOversampler" in content
+        assert "random_seed=42" in content
+
 
 class TestSaveGallery:
 
@@ -238,6 +262,46 @@ class TestSaveGallery:
         assert (gallery_dir / "examples.pdf").exists()
         assert (gallery_dir / "data_pipeline_config.txt").exists()
         assert result_path == gallery_dir / "examples.pdf"
+
+    def test_generates_from_dataloader(self, tmp_path) -> None:
+        examples = [_make_example() for _ in range(5)]
+        data_loader = DataLoader(
+            ExampleDataset(examples),
+            batch_size=2,
+        )
+        generator = ExampleGalleryGenerator(
+            data_pipeline_config=_make_config(),
+            gallery_directory=tmp_path / "gallery",
+            random_seed=42,
+            num_examples=3,
+        )
+
+        result_path = generator.generate_from_dataloader(data_loader)
+
+        assert result_path.exists()
+
+    def test_generates_each_split_for_a_fold(self, tmp_path) -> None:
+        examples = [_make_example() for _ in range(3)]
+        data_loader = DataLoader(ExampleDataset(examples), batch_size=2)
+        generator = ExampleGalleryGenerator(
+            data_pipeline_config=_make_config(),
+            gallery_directory=tmp_path / "gallery",
+            random_seed=42,
+            num_examples=2,
+        )
+
+        paths = generator.generate_fold_from_dataloaders(
+            fold_index=2,
+            train_loader=data_loader,
+            validation_loader=data_loader,
+            test_loader=data_loader,
+        )
+
+        assert set(paths) == {"train", "validation", "test"}
+        assert paths["train"].name == "fold_2-train.pdf"
+        assert paths["validation"].name == "fold_2-validation.pdf"
+        assert paths["test"].name == "fold_2-test.pdf"
+        assert all(path.is_file() for path in paths.values())
 
     def test_repeated_generate_overwrites_same_folder(self, tmp_path) -> None:
         examples = [_make_example() for _ in range(5)]

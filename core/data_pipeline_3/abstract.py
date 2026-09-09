@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Literal
 
 from .intermediary import SourceRecord, FoldPartition, Example
 
@@ -21,5 +22,9 @@ class AbstractPartitioner(ABC):
 class AbstractExampleConstructor(ABC):
     
     @abstractmethod
-    def construct(self, source_records:list[SourceRecord]) -> list[Example]:
+    def construct(
+        self,
+        source_records:list[SourceRecord],
+        type:Literal["train", "validation", "test"],
+    ) -> list[Example]:
         raise NotImplementedError

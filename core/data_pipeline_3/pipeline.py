@@ -19,11 +19,13 @@ class DataPipeline():
         source_reader:AbstractSourceReader,
         partitioner:AbstractPartitioner,
         example_constructor:AbstractExampleConstructor,
+        batch_size:int,
         oversampler:UniformOversampler|None=None,
     ) -> None:
         self.source_reader = source_reader
         self.partitioner = partitioner
         self.example_constructor = example_constructor
+        self.batch_size = batch_size
         self.oversampler = oversampler
 
         self.init_fold_partitions()
@@ -40,7 +42,6 @@ class DataPipeline():
     def get_data_module(
         self,
         index:int,
-        batch_size:int,
         *,
         num_workers:int=0,
         drop_last_batch:bool=False,
@@ -51,9 +52,18 @@ class DataPipeline():
             raise IndexError(f"fold index is out of range: {index}")
 
         fold_partition = self.fold_partitions[index]
-        train_examples = self.example_constructor.construct(fold_partition.train)
-        validation_examples = self.example_constructor.construct(fold_partition.validation)
-        test_examples = self.example_constructor.construct(fold_partition.test)
+        train_examples = self.example_constructor.construct(
+            fold_partition.train,
+            type="train",
+        )
+        validation_examples = self.example_constructor.construct(
+            fold_partition.validation,
+            type="validation",
+        )
+        test_examples = self.example_constructor.construct(
+            fold_partition.test,
+            type="test",
+        )
 
         if self.oversampler is not None:
             train_examples = self.oversampler.oversample(train_examples)
@@ -66,7 +76,7 @@ class DataPipeline():
         return DataModule(
             train_loader=DataLoader(
                 dataset=ExampleDataset(train_examples),
-                batch_size=batch_size,
+                batch_size=self.batch_size,
                 shuffle=True,
                 num_workers=num_workers,
                 drop_last=drop_last_batch,
@@ -75,14 +85,14 @@ class DataPipeline():
             ),
             validation_loader=DataLoader(
                 dataset=ExampleDataset(validation_examples),
-                batch_size=batch_size,
+                batch_size=self.batch_size,
                 shuffle=False,
                 num_workers=num_workers,
                 pin_memory=pin_memory,
             ),
             test_loader=DataLoader(
                 dataset=ExampleDataset(test_examples),
-                batch_size=batch_size,
+                batch_size=self.batch_size,
                 shuffle=False,
                 num_workers=num_workers,
                 pin_memory=pin_memory,

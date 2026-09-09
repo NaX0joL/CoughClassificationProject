@@ -19,6 +19,7 @@ def _make_source_records() -> list[SourceRecord]:
                     "isInfectious": is_infectious,
                 },
                 audio_path=Path(f"{patient_id}-{recording_index}.wav"),
+                label=int(is_infectious),
             ))
 
     return source_records

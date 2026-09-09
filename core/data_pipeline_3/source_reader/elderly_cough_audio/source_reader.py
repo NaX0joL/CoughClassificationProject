@@ -53,8 +53,8 @@ class SourceReader(AbstractSourceReader):
     
     def _make_source_records(self, metadatas:list[dict], audio_paths:list[Path]) -> list[SourceRecord]:
         name_to_path_mapping = {path.name: path for path in audio_paths}
-        
         source_records = []
+        
         for metadata in metadatas:
             original_path = metadata.get("local_path")
             
@@ -70,7 +70,16 @@ class SourceReader(AbstractSourceReader):
             source_record = SourceRecord(
                 metadata=metadata,
                 audio_path=audio_path,
+                label=self._extract_normalized_label(metadata),
             )
             source_records.append(source_record)
         
         return source_records
+
+    def _extract_normalized_label(self, metadata:dict[str, object]) -> int:
+        value = metadata["isInfectious"]
+        
+        if not value:
+            return 1
+        else:
+            return 2

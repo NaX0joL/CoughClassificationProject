@@ -13,11 +13,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import TwoSlopeNorm
+from torch.utils.data import DataLoader
 
 from ..data_pipeline.data_pipeline_config import DataPipelineConfig
 from ..data_pipeline.intermediary import Example
 from .gallery_directory import (
     GALLERY_DIRECTORY,
+    GalleryDataConfig,
     compute_config_hash as _compute_cache_hash,
     resolve_gallery_directory,
 )
@@ -30,7 +32,7 @@ class ExampleGalleryGenerator:
 
     def __init__(
         self,
-        data_pipeline_config:DataPipelineConfig,
+        data_pipeline_config:DataPipelineConfig|GalleryDataConfig,
         gallery_directory:Path=GALLERY_DIRECTORY,
         num_examples:int=10,
         random_seed:int|None=None,
@@ -80,6 +82,29 @@ class ExampleGalleryGenerator:
         )
         return pdf_path
 
+    def generate_from_dataloader(self, data_loader:DataLoader) -> Path:
+        return self.generate(_get_dataloader_examples(data_loader))
+
+    def generate_fold_from_dataloaders(
+        self,
+        fold_index:int,
+        train_loader:DataLoader,
+        validation_loader:DataLoader,
+        test_loader:DataLoader,
+    ) -> dict[str, Path]:
+        return {
+            split_name: self._generate_fold_split(
+                fold_index,
+                split_name,
+                _get_dataloader_examples(data_loader),
+            )
+            for split_name, data_loader in {
+                "train": train_loader,
+                "validation": validation_loader,
+                "test": test_loader,
+            }.items()
+        }
+
     def save_config_text(self, path:Path) -> None:
         save_data_pipeline_config(self.data_pipeline_config, path)
         return
@@ -90,9 +115,47 @@ class ExampleGalleryGenerator:
             self.gallery_directory,
         )
 
+    def _generate_fold_split(
+        self,
+        fold_index:int,
+        split_name:str,
+        examples:list[Example],
+    ) -> Path:
+        gallery_dir = self._gallery_directory()
+        examples_dir = gallery_dir / "examples"
+        examples_dir.mkdir(parents=True, exist_ok=True)
+        pdf_path = examples_dir / f"fold_{fold_index}-{split_name}.pdf"
+
+        if not self.regenerate and pdf_path.exists():
+            return pdf_path
+
+        save_data_pipeline_config(
+            self.data_pipeline_config,
+            gallery_dir / "data_pipeline_config.txt",
+        )
+        save_examples_pdf(
+            examples=examples,
+            path=pdf_path,
+            num_examples=self.num_examples,
+            seed=self.random_seed,
+            class_names=self.class_names,
+            feature_colormap=self.feature_colormap,
+            x_axis_label=self.x_axis_label,
+            y_axis_label=self.y_axis_label,
+            colorbar_label=self.colorbar_label,
+        )
+        return pdf_path
+
+
+def _get_dataloader_examples(data_loader:DataLoader) -> list[Example]:
+    examples = getattr(data_loader.dataset, "examples", None)
+    if not isinstance(examples, list):
+        raise TypeError("data loader dataset must expose an examples list")
+    return examples
+
 
 def save_data_pipeline_config(
-    config:DataPipelineConfig,
+    config:DataPipelineConfig|GalleryDataConfig,
     path:Path,
 ) -> None:
     with path.open("w", encoding="utf-8") as f:
@@ -292,7 +355,9 @@ def _plot_feature_values(
     return
 
 
-def _format_data_pipeline_config(config:DataPipelineConfig) -> str:
+def _format_data_pipeline_config(
+    config:DataPipelineConfig|GalleryDataConfig,
+) -> str:
     return "\n\n".join(
         f"{name} = {_format_value(getattr(config, name), indentation=0)}"
         for name in vars(config)
@@ -315,6 +380,9 @@ def _format_value(value:Any, indentation:int) -> str:
 
     if isinstance(value, (list,)):
         return _format_sequence(value, indentation)
+
+    if not is_dataclass(value) and not hasattr(value, "__dict__"):
+        return pformat(value)
 
     parameters = _get_display_parameters(value)
     return _format_object(value.__class__.__name__, parameters, indentation)
@@ -391,7 +459,7 @@ def _get_public_parameters(value:Any) -> dict[str, Any]:
 
 
 def _is_display_parameter(name:str, parameter:Any) -> bool:
-    if name.startswith("_") or name == "training":
+    if name.startswith("_") or name in {"oversampler", "training"}:
         return False
     if isinstance(parameter, (np.ndarray,)):
         return False

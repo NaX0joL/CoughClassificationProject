@@ -17,6 +17,25 @@ from core.data_pipeline.preprocessing import (
 )
 from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
 from core.data_pipeline.stratifier import DataSplitter
+from core.data_pipeline_3.example_constructor.example_constructor import (
+    ExampleConstructor as ExampleConstructor3,
+)
+from core.data_pipeline_3.example_constructor._utils.segment_labeler import (
+    OverlapLabeler as OverlapLabeler3,
+)
+from core.data_pipeline_3.example_constructor._utils.series_segmenter import (
+    CenteredCoughSegmenter as CenteredCoughSegmenter3,
+    SlidingWindowSegmenter as SlidingWindowSegmenter3,
+)
+from core.data_pipeline_3.example_constructor._utils.segment_transformer import (
+    MFCC as MFCC3,
+)
+from core.data_pipeline_3.partitioner import Partitioner as Partitioner3
+from core.data_pipeline_3.oversampler import UniformOversampler as UniformOversampler3
+from core.data_pipeline_3.pipeline import DataPipeline as DataPipeline3
+from core.data_pipeline_3.source_reader.elderly_cough_audio.source_reader import (
+    SourceReader as SourceReader3,
+)
 from core.experiment import ExperimentOrchestrator
 from core.experiment_config import ExperimentConfig
 from core.metrics import (
@@ -89,6 +108,20 @@ class YamlToExperimentConverter:
         "PersistenceConfig": PersistenceConfig,
     }
 
+    _VERSIONED_TYPE_CONSTRUCTORS:dict[int, dict[str, type[Any]]] = {
+        3: {
+            "DataPipeline": DataPipeline3,
+            "SourceReader": SourceReader3,
+            "Partitioner": Partitioner3,
+            "ExampleConstructor": ExampleConstructor3,
+            "SlidingWindowSegmenter": SlidingWindowSegmenter3,
+            "CenteredCoughSegmenter": CenteredCoughSegmenter3,
+            "OverlapLabeler": OverlapLabeler3,
+            "MFCC": MFCC3,
+            "UniformOversampler": UniformOversampler3,
+        },
+    }
+
     def convert(self, yaml_path:Path) -> ExperimentOrchestrator:
         yaml_path = self._resolve_yaml_path(yaml_path)
         yaml_config = self._read_yaml_file(yaml_path)
@@ -158,12 +191,14 @@ class YamlToExperimentConverter:
         yaml_value:Any,
         yaml_path:Path,
         field_path:str,
+        version:int|None=None,
     ) -> Any:
         if isinstance(yaml_value, list):
             return self._create_config_list(
                 yaml_value,
                 yaml_path,
                 field_path,
+                version,
             )
 
         if isinstance(yaml_value, dict):
@@ -171,6 +206,7 @@ class YamlToExperimentConverter:
                 yaml_value,
                 yaml_path,
                 field_path,
+                version,
             )
 
         return yaml_value
@@ -180,12 +216,14 @@ class YamlToExperimentConverter:
         yaml_values:list[Any],
         yaml_path:Path,
         field_path:str,
+        version:int|None,
     ) -> list[Any]:
         return [
             self._create_config_object(
                 yaml_value,
                 yaml_path,
                 field_path=f"{field_path}[{index}]",
+                version=version,
             )
             for index, yaml_value in enumerate(yaml_values)
         ]
@@ -195,18 +233,27 @@ class YamlToExperimentConverter:
         yaml_config:dict[str, Any],
         yaml_path:Path,
         field_path:str,
+        version:int|None,
     ) -> Any:
+        version = yaml_config.get("version", version)
+        if version is not None and not isinstance(version, int):
+            raise YamlExperimentError(
+                f"{yaml_path} {field_path}.version must be an integer",
+            )
+
         if "type" in yaml_config:
             return self._create_registered_object(
                 yaml_config,
                 yaml_path,
                 field_path,
+                version,
             )
 
         return self._create_plain_dictionary(
             yaml_config,
             yaml_path,
             field_path,
+            version,
         )
 
     def _create_plain_dictionary(
@@ -214,12 +261,14 @@ class YamlToExperimentConverter:
         yaml_config:dict[str, Any],
         yaml_path:Path,
         field_path:str,
+        version:int|None,
     ) -> dict[str, Any]:
         return {
             key: self._create_config_object(
                 value,
                 yaml_path,
                 field_path=f"{field_path}.{key}",
+                version=version,
             )
             for key, value in yaml_config.items()
         }
@@ -229,13 +278,20 @@ class YamlToExperimentConverter:
         yaml_config:dict[str, Any],
         yaml_path:Path,
         field_path:str,
+        version:int|None,
     ) -> Any:
         type_name = self._get_type_name(yaml_config, yaml_path, field_path)
-        constructor = self._get_constructor(type_name)
+        constructor = self._get_constructor(
+            type_name,
+            version,
+            yaml_path,
+            field_path,
+        )
         parameters = self._create_constructor_parameters(
             yaml_config,
             yaml_path,
             field_path,
+            version,
         )
         config_object = self._call_constructor(
             constructor,
@@ -253,29 +309,50 @@ class YamlToExperimentConverter:
         field_path:str,
     ) -> str:
         type_name = yaml_config["type"]
-        if not isinstance(type_name, str) or type_name not in self._TYPE_CONSTRUCTORS:
+        if not isinstance(type_name, str):
             raise YamlExperimentError(
                 f"{yaml_path} {field_path}.type has unknown type {type_name!r}",
             )
         return type_name
 
-    def _get_constructor(self, type_name:str) -> type[Any]:
-        return self._TYPE_CONSTRUCTORS[type_name]
+    def _get_constructor(
+        self,
+        type_name:str,
+        version:int|None,
+        yaml_path:Path,
+        field_path:str,
+    ) -> type[Any]:
+        versioned_constructors = self._VERSIONED_TYPE_CONSTRUCTORS.get(
+            version,
+            {},
+        )
+        if type_name in versioned_constructors:
+            return versioned_constructors[type_name]
+
+        if type_name in self._TYPE_CONSTRUCTORS:
+            return self._TYPE_CONSTRUCTORS[type_name]
+
+        raise YamlExperimentError(
+            f"{yaml_path} {field_path}.type has unknown type {type_name!r} "
+            f"for version {version!r}",
+        )
 
     def _create_constructor_parameters(
         self,
         yaml_config:dict[str, Any],
         yaml_path:Path,
         field_path:str,
+        version:int|None,
     ) -> dict[str, Any]:
         return {
             name: self._create_config_object(
                 value,
                 yaml_path,
                 field_path=f"{field_path}.{name}",
+                version=version,
             )
             for name, value in yaml_config.items()
-            if name != "type"
+            if name not in {"type", "version"}
         }
 
     def _call_constructor(

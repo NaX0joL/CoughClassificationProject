@@ -1,20 +1,16 @@
+from pathlib import Path
 
-from core.data_pipeline_3.pipeline import DataPipeline
-from core.data_pipeline_3.source_reader.elderly_cough_audio.source_reader import SourceReader
-from core.data_pipeline_3.partitioner import Partitioner
-
+from modules.yaml_experiment import YamlToExperimentConverter, do_experiment
 
 
-def main():
-    pipeline = DataPipeline(
-        source_reader=SourceReader(),
-        partitioner=Partitioner(),
-    )
-    pipeline.get_data_module()
+
+def main(yaml_path:Path) -> None:
+    experiment = YamlToExperimentConverter().convert(yaml_path)
+    do_experiment(experiment)
     return
 
 
 
 if __name__ == "__main__":
-    main()
+    main(Path("yaml/run/mfcc_sliding_windows_mlp_v3.yaml"))
     print("DONE!")

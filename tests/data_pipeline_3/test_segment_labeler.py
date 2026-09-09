@@ -50,6 +50,18 @@ def test_overlap_at_threshold_uses_source_label() -> None:
     assert labels == [2]
 
 
+def test_inclusive_annotation_end_counts_toward_overlap() -> None:
+    labeler = OverlapLabeler(overlap_threshold=0.5, no_overlap_label=0)
+
+    labels = labeler.label(
+        segments=[_make_segment(0, 10)],
+        cough_intervals=[(5, 9)],
+        source_label=2,
+    )
+
+    assert labels == [2]
+
+
 def test_each_segment_is_labeled_independently() -> None:
     labeler = OverlapLabeler(overlap_threshold=0.5, no_overlap_label=0)
 

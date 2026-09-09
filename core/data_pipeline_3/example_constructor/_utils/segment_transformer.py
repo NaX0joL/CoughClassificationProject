@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torchaudio.transforms as audio_transforms
 
-from ...intermediary import Example
+from ...intermediary import SeriesSegment
 
 
 
@@ -10,26 +10,25 @@ SCALING_EPSILON = 1e-8
 
 
 
-class ExampleTransformer():
+class SegmentTransformer():
 
-    def transform(self, examples:list[Example]) -> list[Example]:
-        transformed_examples = []
+    def transform(self, segments:list[SeriesSegment]) -> list[SeriesSegment]:
+        transformed_segments = []
 
-        for example in examples:
-            transformed_examples.append(Example(
-                value=self._transform_value(example.value),
-                label=example.label,
-                metadata=example.metadata,
+        for segment in segments:
+            transformed_segments.append(SeriesSegment(
+                value=self._transform_value(segment.value),
+                original_index=segment.original_index,
             ))
 
-        return transformed_examples
+        return transformed_segments
 
     def _transform_value(self, value:np.ndarray) -> np.ndarray:
         raise NotImplementedError
 
 
 
-class MFCC(ExampleTransformer):
+class MFCC(SegmentTransformer):
 
     def __init__(
         self,
@@ -60,7 +59,7 @@ class MFCC(ExampleTransformer):
 
 
 
-class LogMelSpectrogram(ExampleTransformer):
+class LogMelSpectrogram(SegmentTransformer):
 
     def __init__(
         self,
@@ -89,7 +88,7 @@ class LogMelSpectrogram(ExampleTransformer):
 
 
 
-class FeatureWiseStandardization(ExampleTransformer):
+class FeatureWiseStandardization(SegmentTransformer):
 
     def _transform_value(self, value:np.ndarray) -> np.ndarray:
         feature_means = value.mean(axis=0, keepdims=True)
@@ -102,7 +101,7 @@ class FeatureWiseStandardization(ExampleTransformer):
 
 
 
-class FeatureWiseNormalization(ExampleTransformer):
+class FeatureWiseNormalization(SegmentTransformer):
 
     def _transform_value(self, value:np.ndarray) -> np.ndarray:
         feature_minimums = value.min(axis=0, keepdims=True)

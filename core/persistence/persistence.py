@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from torch import Tensor
+from torch.utils.data import DataLoader
 
 from ..model import FullModel
 from ..data_pipeline.dataset import ExampleDataset
@@ -101,6 +102,10 @@ class ExperimentPersistence:
         class_names:dict[int, str],
         train_dataset:ExampleDataset,
         validation_dataset:ExampleDataset,
+        additional_confusion_matrices:dict[
+            str,
+            tuple[np.ndarray, np.ndarray],
+        ]|None=None,
     ) -> None:
         save_fold_figures(
             self.figures_directory,
@@ -113,6 +118,7 @@ class ExperimentPersistence:
             train_dataset,
             validation_dataset,
             self.config,
+            additional_confusion_matrices,
         )
         save_fold_json(
             self.json_directory,
@@ -121,6 +127,36 @@ class ExperimentPersistence:
             validation_metrics,
         )
         save_fold_weights(self.weights_directory, fold_index, model)
+        return
+
+    def save_fold_from_dataloaders(
+        self,
+        fold_index:int,
+        model:FullModel,
+        loss_log:LossLog,
+        validation_metrics:dict[str, float],
+        labels:np.ndarray,
+        predictions:np.ndarray,
+        class_names:dict[int, str],
+        train_loader:DataLoader,
+        validation_loader:DataLoader,
+        additional_confusion_matrices:dict[
+            str,
+            tuple[np.ndarray, np.ndarray],
+        ]|None=None,
+    ) -> None:
+        self.save_fold(
+            fold_index=fold_index,
+            model=model,
+            loss_log=loss_log,
+            validation_metrics=validation_metrics,
+            labels=labels,
+            predictions=predictions,
+            class_names=class_names,
+            train_dataset=train_loader.dataset,
+            validation_dataset=validation_loader.dataset,
+            additional_confusion_matrices=additional_confusion_matrices,
+        )
         return
 
     def save_cross_validation_summary(

@@ -20,9 +20,9 @@ class TrainingConfig:
     learning_rate: float
     weight_decay: float
     
-    batch_size: int
-    num_workers: int
-    drop_last: bool
+    batch_size: int = 32
+    num_workers: int = 0
+    drop_last: bool = False
     
     class_weighting: CLASS_WEIGHTING_CHOICES = "none"
     early_stopping_patience: int|None = None
