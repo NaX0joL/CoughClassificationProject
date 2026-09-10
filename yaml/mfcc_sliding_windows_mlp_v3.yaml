@@ -53,9 +53,8 @@ config:
         architecture:
             type: MLP
             linear_dims:
-                - 256
-                - 256
-                - 256
+                - 128
+                - 64
             dropout: 0.3
             output_dim: 3
         behavior:
@@ -72,7 +71,7 @@ config:
         num_workers: 0
         drop_last: false
         class_weighting: none
-        early_stopping_patience: null
+        early_stopping_patience: 20
         load_best_model: true
 
     metrics_config:

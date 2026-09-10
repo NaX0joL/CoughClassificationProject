@@ -1,8 +1,12 @@
 """Collect metrics from saved mpkg models and save them in Excel."""
 
 import json
+import importlib
+import importlib.util
 import os
 import sys
+from types import ModuleType
+from typing import Any
 
 print(os.getcwd())
 sys.path.append(os.getcwd())
@@ -18,8 +22,9 @@ import pandas as pd
 project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(project_root))
 
-from core.data_pipeline import DataPipeline
+from core.data_pipeline_3.pipeline import DataPipeline
 from core.experiment import ExperimentOrchestrator
+from core.experiment_config import ExperimentConfig
 from core.metrics import (
     AccuracyMetric,
     F1ScoreMetric,
@@ -66,6 +71,112 @@ DEFAULT_METRICS = {
     "macro_precision": True,
     "macro_recall": True,
 }
+
+
+REPLACEMENT_CONFIG_ATTRIBUTE_NAMES = (
+    "replacement_config",
+    "experiment_config",
+    "config",
+)
+
+
+def load_replacement_config(config_reference:str|Path) -> ExperimentConfig:
+    """Import an externally defined replacement ``ExperimentConfig``.
+
+    The reference may be a Python module, a Python file, or either followed
+    by ``:attribute``.  When the attribute is omitted, a conventional config
+    attribute is selected, or a sole ``ExperimentConfig`` in the module is
+    used.
+    """
+    module_reference, attribute_name = _split_config_reference(
+        str(config_reference),
+    )
+    module, inferred_attribute_name = _import_config_module(module_reference)
+    replacement_config = _select_config_attribute(
+        module,
+        attribute_name or inferred_attribute_name,
+    )
+    if not isinstance(replacement_config, ExperimentConfig):
+        raise TypeError(
+            "replacement config must be an ExperimentConfig instance"
+        )
+    return replacement_config
+
+
+def _split_config_reference(config_reference:str) -> tuple[str, str|None]:
+    if ":" not in config_reference:
+        return config_reference, None
+
+    module_reference, attribute_name = config_reference.rsplit(":", maxsplit=1)
+    if not module_reference or not attribute_name:
+        raise ValueError(
+            "replacement config must use MODULE[:ATTRIBUTE] or FILE[:ATTRIBUTE]"
+        )
+    return module_reference, attribute_name
+
+
+def _import_config_module(
+    module_reference:str,
+) -> tuple[ModuleType, str|None]:
+    config_path = Path(module_reference)
+    if config_path.is_file():
+        module_name = f"_recompute_replacement_config_{abs(hash(config_path.resolve()))}"
+        spec = importlib.util.spec_from_file_location(module_name, config_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"cannot import replacement config: {config_path}")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        try:
+            spec.loader.exec_module(module)
+        except Exception:
+            sys.modules.pop(module_name, None)
+            raise
+        return module, None
+
+    try:
+        return importlib.import_module(module_reference), None
+    except ModuleNotFoundError as import_error:
+        if "." not in module_reference:
+            raise import_error
+        module_name, attribute_name = module_reference.rsplit(".", maxsplit=1)
+        try:
+            module = importlib.import_module(module_name)
+        except ModuleNotFoundError:
+            raise import_error
+        return module, attribute_name
+
+
+def _select_config_attribute(
+    module:ModuleType,
+    attribute_name:str|None,
+) -> Any:
+    if attribute_name is not None:
+        try:
+            return getattr(module, attribute_name)
+        except AttributeError as error:
+            raise AttributeError(
+                f"replacement config attribute does not exist: {attribute_name}"
+            ) from error
+
+    for conventional_name in REPLACEMENT_CONFIG_ATTRIBUTE_NAMES:
+        candidate = getattr(module, conventional_name, None)
+        if isinstance(candidate, ExperimentConfig):
+            return candidate
+
+    config_instances = [
+        value for value in vars(module).values()
+        if isinstance(value, ExperimentConfig)
+    ]
+    if len(config_instances) == 1:
+        return config_instances[0]
+    if not config_instances:
+        raise ValueError(
+            "replacement config module must define an ExperimentConfig"
+        )
+    raise ValueError(
+        "replacement config module defines multiple ExperimentConfig instances; "
+        "specify one with :ATTRIBUTE"
+    )
 
 
 def find_mpkg_folders(folder):
@@ -116,32 +227,56 @@ def extract_one_mpkg(mpkg_folder, metric_names=None):
     return fold_rows
 
 
-def recompute_one_mpkg(mpkg_folder, metrics_config):
+def recompute_one_mpkg(
+    mpkg_folder,
+    metrics_config=None,
+    replacement_config:ExperimentConfig|None=None,
+):
     """Return one row of metrics for every saved fold in an mpkg folder."""
     print(f"Checking {mpkg_folder.name}...")
+
+    if replacement_config is None and isinstance(metrics_config, ExperimentConfig):
+        replacement_config = metrics_config
+        metrics_config = None
 
     # Load the saved models and the configuration used to train them.
     experiment = ExperimentOrchestrator.load(mpkg_folder)
 
-    # Recreate the exact validation folds from the saved configuration.
-    pipeline = DataPipeline.create(experiment.config.data_pipeline_config)
-    validation_folds = pipeline.get_data_split().development_folds
+    # A replacement config can change data and metric settings, but never the
+    # model config.  The loaded experiment and its saved fold models therefore
+    # remain the source of truth for model construction and evaluation.
+    data_pipeline_config = experiment.config.data_pipeline_config
+    if replacement_config is not None:
+        data_pipeline_config = replacement_config.data_pipeline_config
 
-    if len(experiment.persisted_folds) != len(validation_folds):
-        raise ValueError(f"Saved models and validation folds do not match: {mpkg_folder}")
+    if metrics_config is None:
+        metrics_config = (
+            replacement_config.metrics_config
+            if replacement_config is not None
+            else experiment.config.metrics_config
+        )
+
+    # Current experiments persist the version-3 pipeline as its components,
+    # rather than as a DataPipelineConfig.  Rebuild that pipeline directly.
+    pipeline = _create_current_data_pipeline(data_pipeline_config)
+
+    persisted_fold_indices = [
+        saved_fold.fold_index for saved_fold in experiment.persisted_folds
+    ]
+    expected_fold_indices = list(range(1, len(pipeline) + 1))
+    if sorted(persisted_fold_indices) != expected_fold_indices:
+        raise ValueError(f"Saved models and data folds do not match: {mpkg_folder}")
 
     evaluator = ModelEvaluator(metrics_config)
     fold_rows = []
 
-    # Evaluate each saved fold model on its corresponding validation fold.
-    for saved_fold, validation_fold in zip(
-        experiment.persisted_folds,
-        validation_folds,
-        strict=True,
-    ):
-        result = evaluator.evaluate(
+    # Fold metrics are persisted from test loaders, so recompute against the
+    # test population for the matching one-based persisted fold index.
+    for saved_fold in experiment.persisted_folds:
+        data_module = pipeline.get_data_module(saved_fold.fold_index - 1)
+        result = evaluator.evaluate_dataloader(
             saved_fold.model,
-            validation_fold.validation_dataset,
+            data_module.test_loader,
         )
 
         fold_rows.append({
@@ -151,6 +286,24 @@ def recompute_one_mpkg(mpkg_folder, metrics_config):
             **result.metrics.to_dict(),
         })
     return fold_rows
+
+
+def _create_current_data_pipeline(data_pipeline_config):
+    if isinstance(data_pipeline_config, DataPipeline):
+        return data_pipeline_config
+
+    if isinstance(data_pipeline_config, dict):
+        try:
+            return DataPipeline(**data_pipeline_config)
+        except TypeError as error:
+            raise ValueError(
+                "saved data pipeline configuration has invalid components"
+            ) from error
+
+    raise TypeError(
+        "data pipeline configuration must be a core.data_pipeline_3.DataPipeline "
+        "or persisted component dictionary"
+    )
 
 
 def create_summary_table(fold_table):
@@ -202,27 +355,61 @@ def main():
             + ", ".join(METRICS_BY_NAME)
         ),
     )
+    parser.add_argument(
+        "--replacement-config",
+        metavar="MODULE[:ATTRIBUTE]",
+        help=(
+            "Python module or file defining a replacement ExperimentConfig "
+            "for --recompute. Its data and metrics settings are used; the "
+            "saved mpkg model configuration remains authoritative."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.replacement_config is not None and not args.recompute:
+        parser.error("--replacement-config requires --recompute")
 
     mpkg_folders = find_mpkg_folders(args.folder)
     fold_rows = []
     if args.recompute:
-        selected_metric_names = args.metrics or [
-            name for name, is_enabled in DEFAULT_METRICS.items() if is_enabled
-        ]
-        if not selected_metric_names:
-            parser.error(
-                "Enable at least one metric in DEFAULT_METRICS or use --metrics"
+        replacement_config = None
+        if args.replacement_config is not None:
+            replacement_config = load_replacement_config(args.replacement_config)
+
+        if args.metrics is not None:
+            selected_metrics_config = MetricsConfig(
+                metrics=tuple(
+                    METRICS_BY_NAME[name]() for name in args.metrics
+                ),
             )
-        selected_metrics_config = MetricsConfig(
-            metrics=tuple(
-                METRICS_BY_NAME[name]() for name in selected_metric_names
-            ),
-        )
+        elif replacement_config is not None:
+            selected_metrics_config = replacement_config.metrics_config
+        else:
+            selected_metric_names = [
+                name for name, is_enabled in DEFAULT_METRICS.items() if is_enabled
+            ]
+            if not selected_metric_names:
+                parser.error(
+                    "Enable at least one metric in DEFAULT_METRICS or use --metrics"
+                )
+            selected_metrics_config = MetricsConfig(
+                metrics=tuple(
+                    METRICS_BY_NAME[name]() for name in selected_metric_names
+                ),
+            )
         for mpkg_folder in mpkg_folders:
-            fold_rows.extend(
-                recompute_one_mpkg(mpkg_folder, selected_metrics_config)
-            )
+            if replacement_config is None:
+                fold_rows.extend(
+                    recompute_one_mpkg(mpkg_folder, selected_metrics_config)
+                )
+            else:
+                fold_rows.extend(
+                    recompute_one_mpkg(
+                        mpkg_folder,
+                        selected_metrics_config,
+                        replacement_config,
+                    )
+                )
     else:
         for mpkg_folder in mpkg_folders:
             fold_rows.extend(extract_one_mpkg(mpkg_folder, args.metrics))

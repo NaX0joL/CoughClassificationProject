@@ -7,6 +7,7 @@ from core.metrics import (
     AccuracyMetric,
     ClassificationMetricsCalculator,
     F1ScoreMetric,
+    MacroAccuracyMetric,
     MetricsConfig,
     PRAucMetric,
     RocAucMetric,
@@ -108,6 +109,29 @@ def test_auc_metrics_do_not_warn_when_an_expected_class_is_absent() -> None:
         )
 
     assert caught_warnings == []
+
+
+def test_macro_accuracy_does_not_warn_when_prediction_class_is_absent_from_labels(
+) -> None:
+    labels = np.array([1, 2])
+    predictions = np.array([0, 2])
+    probabilities = np.array([
+        [0.8, 0.1, 0.1],
+        [0.1, 0.1, 0.8],
+    ])
+
+    with warnings.catch_warnings(record=True) as caught_warnings:
+        warnings.simplefilter("always")
+        metrics = calculate_classification_metrics(
+            labels,
+            predictions,
+            probabilities,
+            class_labels=np.array([0, 1, 2]),
+            metrics=[MacroAccuracyMetric()],
+        )
+
+    assert caught_warnings == []
+    assert metrics.macro_accuracy == pytest.approx(0.5)
 
 
 def test_metrics_calculator_calculates_only_selected_metric_instances() -> None:

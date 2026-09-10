@@ -45,11 +45,29 @@ def test_time_development_fold_training(
 def test_print_training_time(
     capsys:pytest.CaptureFixture[str],
 ) -> None:
-    experiment = OldExperimentOrchestrator.__new__(OldExperimentOrchestrator)
+    experiment = ExperimentOrchestrator.__new__(ExperimentOrchestrator)
 
     experiment._print_training_time("fold-2", 65.5)
 
     assert capsys.readouterr().out == "fold-2 training time: 00:01:05.50\n"
+
+
+def test_time_trainer_fit(monkeypatch:pytest.MonkeyPatch) -> None:
+    times = iter([10.0, 13.5])
+    loss_log = Mock()
+    trainer = Mock()
+    trainer.fit.return_value = loss_log
+    experiment = ExperimentOrchestrator.__new__(ExperimentOrchestrator)
+    monkeypatch.setattr(
+        "core.experiment.perf_counter",
+        lambda: next(times),
+    )
+
+    returned_loss_log, training_seconds = experiment._time_trainer_fit(trainer)
+
+    trainer.fit.assert_called_once_with()
+    assert returned_loss_log is loss_log
+    assert training_seconds == 3.5
 
 
 def test_train_model_builds_and_trains_each_pipeline_fold(
@@ -222,6 +240,10 @@ def test_train_model_builds_and_trains_each_pipeline_fold(
         1: "label 1",
         2: "label 2",
     }
+    gallery_config = example_gallery_generator.call_args.kwargs[
+        "data_pipeline_config"
+    ]
+    assert gallery_config.name is None
     assert class_distribution_generator.call_args.kwargs["class_names"] == {
         0: "label 0",
         1: "label 1",

@@ -1,0 +1,106 @@
+experiment_id: mfcc_sliding_windows_lenet_2d_v3
+
+config:
+    type: ExperimentConfig
+
+    data_pipeline_config:
+        type: DataPipeline
+        version: 3
+        batch_size: 128
+
+        source_reader:
+            type: SourceReader
+        partitioner:
+            type: Partitioner
+            number_of_outer_folds: 5
+            number_of_inner_folds: 5
+            random_seed: 42
+        example_constructor:
+            type: ExampleConstructor
+            sampling_rate: 16000
+            verbose: false
+            train_segmenter:
+                type: SlidingWindowSegmenter
+                window_size: 8000
+                stride: 4000
+                drop_last: false
+            validation_segmenter:
+                type: SlidingWindowSegmenter
+                window_size: 8000
+                stride: 4000
+                drop_last: true
+            test_segmenter:
+                type: CenteredCoughSegmenter
+                window_size: 8000
+            segment_labeler:
+                type: OverlapLabeler
+                overlap_threshold: 0.7
+                no_overlap_label: 0
+            transformer:
+                type: MFCC
+                sampling_rate: 16000
+                n_fft: 512
+                win_length: 400
+                hop_length: 160
+                n_mels: 40
+                n_mfcc: 40
+        oversampler:
+            type: UniformOversampler
+            random_seed: 42
+
+    model_config:
+        type: ModelConfig
+        architecture:
+            type: LeNet2D
+            conv_channels:
+                - 32
+                - 64
+                - 128
+            linear_dims:
+                - 128
+                - 128
+            dropout: 0.3
+            output_dim: 3
+        behavior:
+            type: ClassificationBehavior
+
+    training_config:
+        type: TrainingConfig
+        random_seed: 42
+        num_epochs: 100
+        criterion_name: cross_entropy
+        optimizer_name: adamw
+        learning_rate: 0.0001
+        weight_decay: 0.001
+        num_workers: 0
+        drop_last: false
+        class_weighting: none
+        early_stopping_patience: null
+        load_best_model: true
+
+    metrics_config:
+        type: MetricsConfig
+        metrics:
+            - type: RocAucMetric
+            - type: PRAucMetric
+            - type: PrecisionMetric
+            - type: RecallMetric
+            - type: SpecificityMetric
+            - type: F1ScoreMetric
+            - type: AccuracyMetric
+            - type: MacroAccuracyMetric
+            - type: MacroF1ScoreMetric
+            - type: MacroPrecisionMetric
+            - type: MacroRecallMetric
+
+    persistence_config:
+        type: PersistenceConfig
+        number_of_train_model_outputs: 10
+        number_of_validation_model_outputs: 10
+        feature_color_percentile: 99.0
+        feature_colormap: inferno
+        x_axis_label: Frame
+        y_axis_label: MFCC
+        colorbar_label: Coefficient
+        include_grad_cam: false
+        include_legrad: false

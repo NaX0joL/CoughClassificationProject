@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter
 
 import torch
 
@@ -131,7 +132,6 @@ class ExperimentOrchestrator:
                 "oversampler": data_pipeline.oversampler,
                 "gallery_version": GALLERY_VERSION,
             },
-            name=self.experiment_id,
         )
         gallery = ExampleGalleryGenerator(
             data_pipeline_config=gallery_config,
@@ -148,6 +148,7 @@ class ExperimentOrchestrator:
         )
         model_evaluator = ModelEvaluator(self.config.metrics_config)
         folds_metrics = []
+        total_training_seconds = 0.0
 
         for fold_index in range(len(data_pipeline)):
             persisted_fold_index = fold_index + 1
@@ -182,7 +183,12 @@ class ExperimentOrchestrator:
                 model=model,
                 data_module=data_module,
             )
-            loss_log = trainer.fit()
+            loss_log, fold_training_seconds = self._time_trainer_fit(trainer)
+            total_training_seconds += fold_training_seconds
+            self._print_training_time(
+                f"fold-{persisted_fold_index}",
+                fold_training_seconds,
+            )
             
             train_evaluation = model_evaluator.evaluate_dataloader(
                 model=model,
@@ -229,7 +235,19 @@ class ExperimentOrchestrator:
         persistence.save_cross_validation_summary(folds_metrics)
 
         print("training finished")
+        self._print_training_time("total", total_training_seconds)
         print(f"mpkg stored in {persistence.run_directory}")
+        return
+
+    def _time_trainer_fit(self, trainer:Trainer) -> tuple[LossLog, float]:
+        start_time = perf_counter()
+        loss_log = trainer.fit()
+        training_seconds = perf_counter() - start_time
+        return loss_log, training_seconds
+
+    def _print_training_time(self, name:str, training_seconds:float) -> None:
+        formatted_time = _format_elapsed_time(training_seconds)
+        print(f"{name} training time: {formatted_time}")
         return
 
 
