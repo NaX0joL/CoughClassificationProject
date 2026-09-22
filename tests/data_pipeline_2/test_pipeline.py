@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-import core.data_pipeline_2 as data_pipeline_2
-from core.data_pipeline_2 import (
+import core.legacy.data_pipeline_2 as data_pipeline_2
+from core.legacy.data_pipeline_2 import (
     DataPipeline,
     Example,
     ExampleGenerator,
@@ -11,7 +11,7 @@ from core.data_pipeline_2 import (
     TrainExampleGenerator,
     ValidationExampleGenerator,
 )
-from core.data_pipeline_2.abstract import Partitioner, SourceReader
+from core.legacy.data_pipeline_2.abstract import Partitioner, SourceReader
 
 
 

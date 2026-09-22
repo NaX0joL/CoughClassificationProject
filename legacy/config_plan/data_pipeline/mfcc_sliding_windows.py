@@ -1,7 +1,7 @@
-from core.data_pipeline import DataPipelineConfig
-from core.data_pipeline.preprocessing import SlidingWindowSegmenter, MFCC, ZeroPadder
-from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
-from core.data_pipeline.stratifier import DataSplitter
+from core.legacy.data_pipeline import DataPipelineConfig
+from core.legacy.data_pipeline.preprocessing import SlidingWindowSegmenter, MFCC, ZeroPadder
+from core.legacy.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
+from core.legacy.data_pipeline.stratifier import DataSplitter
 
 
 

@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from core.data_pipeline.intermediary import Example
-from core.data_pipeline.preprocessing import (
+from core.legacy.data_pipeline.intermediary import Example
+from core.legacy.data_pipeline.preprocessing import (
     FeatureWiseNormalization,
     FeatureWiseStandardization,
     LogMelSpectrogram,

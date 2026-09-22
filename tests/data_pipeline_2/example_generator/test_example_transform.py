@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from core.data_pipeline_2 import (
+from core.legacy.data_pipeline_2 import (
     DownSampler,
     Example,
     FeatureWiseNormalization,
@@ -9,7 +9,7 @@ from core.data_pipeline_2 import (
     LogMelSpectrogram,
     MFCC,
 )
-from core.data_pipeline_2.abstract import Transformer
+from core.legacy.data_pipeline_2.abstract import Transformer
 
 
 def make_example(value:np.ndarray) -> Example:

@@ -1,15 +1,15 @@
 import numpy as np
 import pytest
 
-import core.data_pipeline_2 as data_pipeline_2
-from core.data_pipeline_2 import (
+import core.legacy.data_pipeline_2 as data_pipeline_2
+from core.legacy.data_pipeline_2 import (
     Example,
     Segment,
     SourceSeries,
     TrainExampleGenerator,
     ValidationExampleGenerator,
 )
-from core.data_pipeline_2.abstract import (
+from core.legacy.data_pipeline_2.abstract import (
     Balancer,
     Labeler,
     Padder,

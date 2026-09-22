@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from core.data_pipeline_2 import (
+from core.legacy.data_pipeline_2 import (
     CenteredCoughSegmenter,
     SlidingWindowSegmenter,
     SourceSeries,

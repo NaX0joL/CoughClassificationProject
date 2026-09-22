@@ -3,8 +3,8 @@ import pytest
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.colors import TwoSlopeNorm
 
-from core.data_pipeline.dataset import ExampleDataset
-from core.data_pipeline.intermediary import Example
+from core.legacy.data_pipeline.dataset import ExampleDataset
+from core.legacy.data_pipeline.intermediary import Example
 from core.gallery import ModelOutput
 from core.persistence.processes.model_output_persistence import _save_output_page
 

@@ -9,12 +9,12 @@ import numpy as np
 import pytest
 from torch.utils.data import DataLoader
 
-from core.data_pipeline.data_pipeline_config import DataPipelineConfig
-from core.data_pipeline.dataset import ExampleDataset
-from core.data_pipeline.intermediary import DataSplit, DevelopmentFold, Example
-from core.data_pipeline.preprocessing import CoughSegmenter, MFCC, ZeroPadder
-from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
-from core.data_pipeline.stratifier import DataSplitter
+from core.legacy.data_pipeline.data_pipeline_config import DataPipelineConfig
+from core.legacy.data_pipeline.dataset import ExampleDataset
+from core.legacy.data_pipeline.intermediary import DataSplit, DevelopmentFold, Example
+from core.legacy.data_pipeline.preprocessing import CoughSegmenter, MFCC, ZeroPadder
+from core.legacy.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
+from core.legacy.data_pipeline.stratifier import DataSplitter
 from core.gallery.gallery_directory import compute_config_hash
 from core.gallery.class_distribution import (
     ClassDistributionGenerator,

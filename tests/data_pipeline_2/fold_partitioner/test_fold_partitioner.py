@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from core.data_pipeline_2.intermediary import FoldPartition, SourceSeries
-from core.data_pipeline_2.fold_partitioner import FoldPartitioner
+from core.legacy.data_pipeline_2.intermediary import FoldPartition, SourceSeries
+from core.legacy.data_pipeline_2.fold_partitioner import FoldPartitioner
 
 
 

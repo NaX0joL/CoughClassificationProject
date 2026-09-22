@@ -1,4 +1,4 @@
-from core.data_pipeline_2 import (
+from core.legacy.data_pipeline_2 import (
     DataPipeline,
     Example,
     ExampleGenerator,
@@ -11,7 +11,7 @@ from core.data_pipeline_2 import (
     UniformOversamplingBalancer,
     ValidationExampleGenerator,
 )
-from core.data_pipeline_2.source_reader import ElderlyCoughAudioSourceReader
+from core.legacy.data_pipeline_2.source_reader import ElderlyCoughAudioSourceReader
 
 
 

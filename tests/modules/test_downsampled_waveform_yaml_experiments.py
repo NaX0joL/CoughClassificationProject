@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from core.data_pipeline.preprocessing import (
+from core.legacy.data_pipeline.preprocessing import (
     DownSampler,
     FeatureWiseNormalization,
     FeatureWiseStandardization,

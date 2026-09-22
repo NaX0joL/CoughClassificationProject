@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, call
 
 import numpy as np
 
-from core.data_pipeline_2 import (
+from core.legacy.data_pipeline_2 import (
     DataPipeline,
     Example,
     ExampleBundle,

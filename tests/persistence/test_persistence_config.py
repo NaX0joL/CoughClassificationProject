@@ -1,6 +1,6 @@
 import pytest
 
-from config_plan import log_mel_spectrogram_persistence_config, mfcc_persistence_config
+from legacy.config_plan import log_mel_spectrogram_persistence_config, mfcc_persistence_config
 from core.persistence import PersistenceConfig
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 
-from core.data_pipeline.preprocessing.segmentation import SlidingWindowSegmenter
-from core.data_pipeline.intermediary import ORIGINAL_LABEL_METADATA_KEY, SourceSeries
+from core.legacy.data_pipeline.preprocessing.segmentation import SlidingWindowSegmenter
+from core.legacy.data_pipeline.intermediary import ORIGINAL_LABEL_METADATA_KEY, SourceSeries
 
 
 def _make_series(signal:list[float], label:int=0, metadata:dict|None=None) -> SourceSeries:

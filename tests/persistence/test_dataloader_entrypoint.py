@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import numpy as np
 from torch.utils.data import DataLoader
 
-from core.data_pipeline.dataset import ExampleDataset
+from core.legacy.data_pipeline.dataset import ExampleDataset
 from core.persistence import ExperimentPersistence
 
 

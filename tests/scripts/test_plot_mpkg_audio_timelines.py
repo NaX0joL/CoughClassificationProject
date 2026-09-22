@@ -130,6 +130,30 @@ def test_persisted_v3_pipeline_dictionary_is_accepted() -> None:
     assert components == (example_constructor, source_reader, 128)
 
 
+def test_persisted_v3_dict_accepts_centered_segmenter() -> None:
+    example_constructor = timeline_script.ExampleConstructor.__new__(
+        timeline_script.ExampleConstructor,
+    )
+    example_constructor.validation_segmenter = (
+        timeline_script.CenteredCoughSegmenter(window_size=8)
+    )
+    example_constructor.audio_file_reader = SimpleNamespace(sampling_rate=16_000)
+    source_reader = timeline_script.SourceReader.__new__(timeline_script.SourceReader)
+    experiment = SimpleNamespace(
+        config=SimpleNamespace(
+            data_pipeline_config={
+                "source_reader": source_reader,
+                "example_constructor": example_constructor,
+                "batch_size": 128,
+            },
+        ),
+    )
+
+    components = _get_v3_components(experiment)
+
+    assert components == (example_constructor, source_reader, 128)
+
+
 def test_transform_segments_applies_saved_transformers_in_order() -> None:
     segments = [SeriesSegment(np.asarray([1.0, 2.0]), (0, 2))]
     first_transformer = _AddingTransformer(1)

@@ -9,7 +9,7 @@ single reproducible experiment workflow, driven entirely by configuration.
 | Directory / file | Component | README |
 |---|---|---|
 | `experiment.py`, `experiment_config.py` | Experiment orchestration (this page) | — |
-| `data_pipeline/` | Audio → feature extraction → dataset splitting | [`core/data_pipeline/README.md`](data_pipeline/README.md) |
+| `legacy/data_pipeline/` | Legacy audio → feature extraction → dataset splitting | [`core/legacy/data_pipeline/README.md`](legacy/data_pipeline/README.md) |
 | `model/` | Neural-network architectures + behaviors | [`core/model/README.md`](model/README.md) |
 | `training/` | Training loop, checkpointing, config | [`core/training/README.md`](training/README.md) |
 | `metrics/` | Model evaluation and classification metrics | [`core/metrics/README.md`](metrics/README.md) |

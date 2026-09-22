@@ -1,4 +1,4 @@
-# core/data_pipeline — Audio → Feature → Dataset
+# core/legacy/data_pipeline — Audio → Feature → Dataset
 
 Turns the raw Elderly Cough Audio dataset into train/validation/test `ExampleDataset`
 objects. Everything is config-driven through five pipeline stages.
@@ -69,7 +69,7 @@ The two shipped pipeline variants live in `config_plan/data_pipeline/`
 scripts. For a quick standalone pipeline:
 
 ```python
-from core.data_pipeline import DataPipeline, DataPipelineConfig
+from core.legacy.data_pipeline import DataPipeline, DataPipelineConfig
 
 config = DataPipelineConfig.default()
 pipeline = DataPipeline.create(config)

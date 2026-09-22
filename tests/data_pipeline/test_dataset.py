@@ -1,7 +1,7 @@
 import numpy as np
 
-from core.data_pipeline.dataset import ExampleDataset
-from core.data_pipeline.intermediary import ORIGINAL_LABEL_METADATA_KEY, Example
+from core.legacy.data_pipeline.dataset import ExampleDataset
+from core.legacy.data_pipeline.intermediary import ORIGINAL_LABEL_METADATA_KEY, Example
 
 
 def test_example_dataset_includes_original_label_as_metadata() -> None:

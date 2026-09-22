@@ -15,7 +15,7 @@ CoughClassificationProject/
 │   ├── experiment.py                       # Top-level workflow
 │   ├── experiment_config.py
 │   │
-│   ├── data_pipeline/                      # Audio → feature-extraction pipeline
+│   ├── legacy/data_pipeline/               # Legacy audio → feature-extraction pipeline
 │   │   │
 │   │   ├── abstract.py                     #   ABCs: SourceReader, Segmenter, Transformer, Padder, Splitter
 │   │   ├── pipeline.py

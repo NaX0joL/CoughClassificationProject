@@ -2,7 +2,7 @@ from collections import Counter
 
 import numpy as np
 
-from core.data_pipeline_2 import Example, UniformOversamplingBalancer
+from core.legacy.data_pipeline_2 import Example, UniformOversamplingBalancer
 
 
 def make_example(label:int, identifier:str) -> Example:

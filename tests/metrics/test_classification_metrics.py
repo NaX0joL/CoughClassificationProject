@@ -2,12 +2,14 @@ import warnings
 
 import numpy as np
 import pytest
+from sklearn.metrics import f1_score
 
 from core.metrics import (
     AccuracyMetric,
     ClassificationMetricsCalculator,
     F1ScoreMetric,
     MacroAccuracyMetric,
+    MacroF1ScoreMetric,
     MetricsConfig,
     PRAucMetric,
     RocAucMetric,
@@ -32,7 +34,7 @@ def test_calculate_classification_metrics_for_binary_classification() -> None:
     assert metrics.precision == pytest.approx(0.8333333333)
     assert metrics.recall == pytest.approx(0.75)
     assert metrics.specificity == pytest.approx(0.75)
-    assert metrics.f1_score == pytest.approx(0.7333333333)
+    assert metrics.f1_score == pytest.approx(0.8)
     assert metrics.accuracy == pytest.approx(0.75)
     assert metrics.macro_accuracy == pytest.approx(0.75)
     assert metrics.macro_f1_score == pytest.approx(0.7333333333)
@@ -44,7 +46,7 @@ def test_calculate_classification_metrics_for_binary_classification() -> None:
         "precision": pytest.approx(0.8333333333),
         "recall": pytest.approx(0.75),
         "specificity": pytest.approx(0.75),
-        "f1_score": pytest.approx(0.7333333333),
+        "f1_score": pytest.approx(0.8),
         "accuracy": pytest.approx(0.75),
         "macro_accuracy": pytest.approx(0.75),
         "macro_f1_score": pytest.approx(0.7333333333),
@@ -58,9 +60,9 @@ def test_calculate_classification_metrics_for_multiclass_classification() -> Non
     predictions = np.array(["cold", "healthy", "healthy", "healthy", "other", "other"])
     probabilities = np.array([
         [0.8, 0.1, 0.1],
-        [0.2, 0.7, 0.1],
+        [0.3, 0.6, 0.1],
         [0.1, 0.8, 0.1],
-        [0.2, 0.7, 0.1],
+        [0.1, 0.8, 0.1],
         [0.1, 0.1, 0.8],
         [0.1, 0.1, 0.8],
     ])
@@ -77,6 +79,52 @@ def test_calculate_classification_metrics_for_multiclass_classification() -> Non
     assert metrics.pr_auc == pytest.approx(1.0)
     assert metrics.accuracy == pytest.approx(5 / 6)
     assert metrics.macro_accuracy == pytest.approx(5 / 6)
+    assert metrics.f1_score == pytest.approx(f1_score(
+        labels,
+        predictions,
+        labels=class_labels,
+        average="weighted",
+        zero_division=0,
+    ))
+
+
+def test_binary_f1_uses_infectious_label_and_differs_from_macro_and_weighted() -> None:
+    labels = np.asarray([0] * 8 + [1] * 2)
+    predictions = np.asarray([0, 0, 0, 0, 0, 0, 0, 1, 0, 1])
+    probabilities = np.zeros((len(labels), 2))
+    calculator = ClassificationMetricsCalculator([
+        F1ScoreMetric(),
+        MacroF1ScoreMetric(),
+    ])
+
+    metrics = calculator.calculate(labels, predictions, probabilities, [0, 1])
+    infectious_f1 = f1_score(
+        labels,
+        predictions,
+        pos_label=1,
+        average="binary",
+        zero_division=0,
+    )
+    weighted_f1 = f1_score(
+        labels,
+        predictions,
+        labels=[0, 1],
+        average="weighted",
+        zero_division=0,
+    )
+    per_class_f1 = f1_score(
+        labels,
+        predictions,
+        labels=[0, 1],
+        average=None,
+        zero_division=0,
+    )
+
+    assert metrics.f1_score == pytest.approx(infectious_f1)
+    assert metrics.f1_score == pytest.approx(0.5)
+    assert metrics.f1_score != pytest.approx(weighted_f1)
+    assert metrics.macro_f1_score == pytest.approx(np.mean(per_class_f1))
+    assert metrics.macro_f1_score != pytest.approx(metrics.f1_score)
 
 
 def test_calculate_classification_metrics_requires_labels_for_missing_classes() -> None:
@@ -152,7 +200,7 @@ def test_metrics_calculator_calculates_only_selected_metric_instances() -> None:
 
     assert metrics.to_dict() == {
         "accuracy": pytest.approx(0.75),
-        "f1_score": pytest.approx(0.7333333333),
+        "f1_score": pytest.approx(0.8),
     }
     with pytest.raises(AttributeError, match="metric was not calculated"):
         _ = metrics.roc_auc

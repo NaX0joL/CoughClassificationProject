@@ -19,6 +19,7 @@ from core.data_pipeline_3.example_constructor.example_constructor import (
     ExampleConstructor,
 )
 from core.data_pipeline_3.example_constructor._utils.series_segmenter import (
+    CenteredCoughSegmenter,
     SlidingWindowSegmenter,
 )
 from core.data_pipeline_3.intermediary import SeriesSegment, SourceRecord
@@ -152,9 +153,11 @@ def _get_v3_components(
         raise TypeError("mpkg must use the v3 example constructor")
     if not isinstance(
         example_constructor.validation_segmenter,
-        SlidingWindowSegmenter,
+        (SlidingWindowSegmenter, CenteredCoughSegmenter),
     ):
-        raise TypeError("mpkg validation segmenter must use sliding windows")
+        raise TypeError(
+            "mpkg validation segmenter must use sliding or centered windows",
+        )
 
     if not isinstance(source_reader, SourceReader):
         raise TypeError("mpkg must use the v3 elderly cough audio source reader")

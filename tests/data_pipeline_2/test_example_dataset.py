@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 
-from core.data_pipeline_2 import Example, ExampleDataset
-from core.data_pipeline_2.intermediary import ORIGINAL_LABEL_METADATA_KEY
+from core.legacy.data_pipeline_2 import Example, ExampleDataset
+from core.legacy.data_pipeline_2.intermediary import ORIGINAL_LABEL_METADATA_KEY
 
 
 def test_example_dataset_converts_example_to_pytorch_item() -> None:

@@ -2,10 +2,11 @@ import argparse
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
 import yaml
 
-from core.data_pipeline import DataPipelineConfig
-from core.data_pipeline.preprocessing import (
+from core.legacy.data_pipeline import DataPipelineConfig
+from core.legacy.data_pipeline.preprocessing import (
     CoughSegmenter,
     DownSampler,
     FeatureWiseNormalization,
@@ -15,8 +16,8 @@ from core.data_pipeline.preprocessing import (
     SlidingWindowSegmenter,
     ZeroPadder,
 )
-from core.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
-from core.data_pipeline.stratifier import DataSplitter
+from core.legacy.data_pipeline.source_reader import ElderlyCoughAudioSourceReader
+from core.legacy.data_pipeline.stratifier import DataSplitter
 from core.data_pipeline_3.example_constructor.example_constructor import (
     ExampleConstructor as ExampleConstructor3,
 )
@@ -58,9 +59,19 @@ from core.model.architectures.LeNet2D import LeNet2D
 from core.model.architectures.MLP import MLP
 from core.model.architectures.PatchTST import PatchTST
 from core.model.architectures.ResNet import ResNet
+from core.model.architectures.TemporalStatisticsMLP import TemporalStatisticsMLP
 from core.model.behavior.classification_behavior import ClassificationBehavior
 from core.persistence import PersistenceConfig
 from core.training import TrainingConfig
+from scripts.analysis.collapse_mpkg_outputs import (
+    _recompute_mpkg_folders,
+    create_summary_table,
+    save_report,
+)
+
+
+COLLAPSED_CLASS_MAP = {0: 0, 1: 0, 2: 1}
+COLLAPSED_REPORT_NAME = "collapsed_output_metrics.xlsx"
 
 
 
@@ -91,6 +102,7 @@ class YamlToExperimentConverter:
         "LeNet2D": LeNet2D,
         "PatchTST": PatchTST,
         "ResNet": ResNet,
+        "TemporalStatisticsMLP": TemporalStatisticsMLP,
         "ClassificationBehavior": ClassificationBehavior,
         "TrainingConfig": TrainingConfig,
         "MetricsConfig": MetricsConfig,
@@ -408,6 +420,41 @@ def get_arguments():
 
 def do_experiment(experiment:ExperimentOrchestrator) -> None:
     experiment.train_model()
+    _save_collapsed_metrics_report(experiment)
+    return
+
+
+def _save_collapsed_metrics_report(experiment:ExperimentOrchestrator) -> None:
+    run_directory = getattr(experiment, "run_directory", None)
+    if run_directory is None:
+        raise YamlExperimentError(
+            "training completed without setting experiment.run_directory",
+        )
+
+    try:
+        run_directory = Path(run_directory)
+    except TypeError as error:
+        raise YamlExperimentError(
+            "experiment.run_directory must be a filesystem path",
+        ) from error
+    if not run_directory.is_dir():
+        raise YamlExperimentError(
+            f"experiment.run_directory does not exist: {run_directory}",
+        )
+
+    fold_rows = _recompute_mpkg_folders(
+        run_directory,
+        COLLAPSED_CLASS_MAP,
+        metric_names=None,
+    )
+    fold_table = pd.DataFrame(fold_rows).sort_values(["mpkg", "fold"])
+    summary_table = create_summary_table(fold_table)
+    save_report(
+        summary_table,
+        fold_table,
+        run_directory / COLLAPSED_REPORT_NAME,
+        COLLAPSED_CLASS_MAP,
+    )
     return
 
 
