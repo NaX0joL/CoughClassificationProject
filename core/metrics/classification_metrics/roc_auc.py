@@ -1,5 +1,6 @@
 import warnings
 
+import numpy as np
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.metrics import roc_auc_score
 
@@ -9,7 +10,9 @@ from .abstract import ClassificationMetric, ClassificationMetricInput
 class RocAucMetric(ClassificationMetric):
     name = "roc_auc"
 
-    def calculate(self, metric_input:ClassificationMetricInput) -> float:
+    def calculate(self, metric_input:ClassificationMetricInput) -> float|None:
+        if self._binary_labels_are_incomplete(metric_input):
+            return None
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UndefinedMetricWarning)
             return self._calculate(metric_input)
@@ -29,3 +32,12 @@ class RocAucMetric(ClassificationMetric):
             multi_class="ovr",
             average="macro",
         ))
+
+    @staticmethod
+    def _binary_labels_are_incomplete(
+        metric_input:ClassificationMetricInput,
+    ) -> bool:
+        return (
+            len(metric_input.class_labels) == 2
+            and not np.isin(metric_input.class_labels, metric_input.labels).all()
+        )

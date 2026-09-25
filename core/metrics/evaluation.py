@@ -7,17 +7,12 @@ from torch.utils.data import DataLoader
 
 from modules.resolve_pytorch_device import get_model_device
 
-from ..data_pipeline.dataset import ExampleDataset
-from ..data_pipeline.intermediary import ORIGINAL_LABEL_METADATA_KEY
-from ..model import FullModel
 from .classification_metrics import ClassificationMetrics, ClassificationMetricsCalculator
+from .label_mapping import BinaryInfectionLabelMapping
 from .metrics_config import MetricsConfig
 
+from core.model.full_model import FullModel
 
-BINARY_CLASS_NAMES = {
-    0: "non-infectious",
-    1: "infectious",
-}
 
 
 @dataclass(frozen=True)
@@ -25,64 +20,38 @@ class ModelEvaluation:
     metrics:ClassificationMetrics
     labels:np.ndarray
     predictions:np.ndarray
-    class_names:dict[int, str]
+    probabilities:np.ndarray
+    reported_labels:np.ndarray
+    reported_predictions:np.ndarray
+    reported_probabilities:np.ndarray
+    reported_class_names:tuple[str, str]
 
 
 
 class ModelEvaluator:
-    """Evaluate a model using the metrics selected by its configuration."""
 
-    def __init__(self, config:MetricsConfig) -> None:
+    def __init__(
+        self,
+        config:MetricsConfig,
+        label_mapping:BinaryInfectionLabelMapping|None=None,
+    ) -> None:
         self.metrics_calculator = ClassificationMetricsCalculator(config.metrics)
+        self.label_mapping = label_mapping or BinaryInfectionLabelMapping()
         return
 
     def evaluate(
         self,
         model:FullModel,
-        dataset:ExampleDataset,
-        batch_size:int=32,
-    ) -> ModelEvaluation:
-        data_loader = DataLoader(
-            dataset=dataset,
-            batch_size=batch_size,
-            shuffle=False,
-        )
-        return self.evaluate_dataloader(model, data_loader)
-
-    def evaluate_dataloader(
-        self,
-        model:FullModel,
         data_loader:DataLoader,
     ) -> ModelEvaluation:
-        labels, predictions, probabilities, original_labels = self._collect_outputs(
-            model,
-            data_loader,
-        )
-        class_labels = np.arange(probabilities.shape[1])
-        metrics = self.metrics_calculator.calculate(
-            labels,
-            predictions,
-            probabilities,
-            class_labels,
-        )
-        return ModelEvaluation(
-            metrics=metrics,
-            labels=labels,
-            predictions=predictions,
-            class_names=_resolve_class_names(labels, original_labels),
-        )
-
-    def _collect_outputs(
-        self,
-        model:FullModel,
-        data_loader:DataLoader,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str]]:
+        device = get_model_device(model)
+        was_training = model.training
         all_labels:list[np.ndarray] = []
         all_predictions:list[np.ndarray] = []
         all_probabilities:list[np.ndarray] = []
-        all_original_labels:list[str] = []
-        device = get_model_device(model)
-        was_training = model.training
+        all_reported_predictions:list[np.ndarray] = []
+        all_reported_probabilities:list[np.ndarray] = []
+        probability_width:int|None = None
         model.eval()
 
         try:
@@ -91,49 +60,56 @@ class ModelEvaluator:
                     values:Tensor = batch["value"].to(device)
                     labels:Tensor = batch["label"]
                     probabilities = model.predict_probabilities(values)
-                    predictions = probabilities.argmax(dim=1)
+                    if probabilities.ndim != 2:
+                        raise ValueError(
+                            "model probabilities must be a two-dimensional tensor",
+                        )
 
+                    current_width = probabilities.shape[1]
+                    if probability_width is None:
+                        probability_width = current_width
+                    elif current_width != probability_width:
+                        raise ValueError(
+                            "model probability width must be consistent across batches",
+                        )
+
+                    raw_probability_array = probabilities.cpu().numpy()
+                    reported_probability_array = self.label_mapping.aggregate_probabilities(
+                        raw_probability_array,
+                    )
+                    predictions = probabilities.argmax(dim=1)
+                    reported_predictions = reported_probability_array.argmax(axis=1)
                     all_labels.append(labels.cpu().numpy())
                     all_predictions.append(predictions.cpu().numpy())
-                    all_probabilities.append(probabilities.cpu().numpy())
-                    all_original_labels.extend(_get_original_labels(batch))
+                    all_probabilities.append(raw_probability_array)
+                    all_reported_predictions.append(reported_predictions)
+                    all_reported_probabilities.append(reported_probability_array)
         finally:
             model.train(was_training)
 
-        if not all_labels:
-            raise ValueError("dataset must contain at least one example")
+        if not all_labels or probability_width is None:
+            raise ValueError("data loader must contain at least one batch")
 
-        return (
-            np.concatenate(all_labels),
-            np.concatenate(all_predictions),
-            np.concatenate(all_probabilities),
-            all_original_labels,
+        labels = np.concatenate(all_labels)
+        predictions = np.concatenate(all_predictions)
+        probabilities = np.concatenate(all_probabilities)
+        reported_labels = self.label_mapping.remap_labels(labels)
+        reported_predictions = np.concatenate(all_reported_predictions)
+        reported_probabilities = np.concatenate(all_reported_probabilities)
+        class_labels = np.arange(len(self.label_mapping.report_class_names))
+        metrics = self.metrics_calculator.calculate(
+            reported_labels,
+            reported_predictions,
+            reported_probabilities,
+            class_labels,
         )
-
-
-def _get_original_labels(batch:dict[str, object]) -> list[str]:
-    metadata = batch.get("metadata")
-    if not isinstance(metadata, dict):
-        raise ValueError("evaluation batch must include metadata")
-
-    original_labels = metadata.get(ORIGINAL_LABEL_METADATA_KEY)
-    if original_labels is None:
-        original_labels = metadata.get("isInfectious")
-    if not isinstance(original_labels, (list, tuple)):
-        raise ValueError("evaluation metadata must include original labels")
-
-    return [str(label) for label in original_labels]
-
-
-def _resolve_class_names(labels:np.ndarray, original_labels:list[str]) -> dict[int, str]:
-    if len(labels) != len(original_labels):
-        raise ValueError("labels and original labels must have equal lengths")
-
-    class_names = dict(BINARY_CLASS_NAMES)
-    for label, original_label in zip(labels, original_labels):
-        numeric_label = int(label)
-        class_names.setdefault(
-            numeric_label,
-            BINARY_CLASS_NAMES.get(numeric_label, original_label),
+        return ModelEvaluation(
+            metrics=metrics,
+            labels=labels,
+            predictions=predictions,
+            probabilities=probabilities,
+            reported_labels=reported_labels,
+            reported_predictions=reported_predictions,
+            reported_probabilities=reported_probabilities,
+            reported_class_names=self.label_mapping.report_class_names,
         )
-    return class_names

@@ -7,10 +7,12 @@ Audio-based classification of elderly coughs (infectious vs. non-infectious) usi
 ```text
 CoughClassificationProject/
 │
-├── main.py                                 # Primary entrypoint
+├── main.py                                 # Canonical X-runner wrapper
 ├── pyproject.toml                          # Project metadata, dependencies (uv)
 │
-├── core/                                   # Framework library
+├── core_new/                               # Canonical framework library
+├── legacy/                                 # Historical implementation and tests
+├── legacy/core/                            # Historical framework tree
 │   │
 │   ├── experiment.py                       # Top-level workflow
 │   ├── experiment_config.py
@@ -113,8 +115,8 @@ CoughClassificationProject/
 ├── config_plan/                            # Pre-built config instances
 │
 ├── scripts/
-│   ├── training/                           # Standalone training scripts & orchestrator
-│   └── analysis/                           # EDA, visualization, metrics recomputation
+│   ├── run_x_yaml_pipeline.py               # Canonical X YAML runner
+│   └── training/                           # Standalone training scripts & orchestrator
 │
 ├── tests/                                  # Pytest suite
 │
@@ -135,15 +137,17 @@ CoughClassificationProject/
 
 ```bash
 uv sync
+uv run python main.py --help
 uv run python main.py
 ```
 
 ## Running Experiments
 
-- `main.py` — default experiment
+- `main.py` — canonical X YAML runner (defaults to `yaml/run/x`)
+- `scripts/run_x_yaml_pipeline.py` — canonical X YAML runner
 - `scripts/training/train_*.py` — individual data-pipeline × model combos
 - `scripts/training/scripts_orchestrator.py` — batch run queued scripts
-- `scripts/analysis/recompute_mpkg_metrics.py` — collect or re-evaluate saved model-package metrics
+- Historical analysis and experiment code is preserved under `legacy/`.
 
 ## Dataset
 

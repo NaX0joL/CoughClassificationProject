@@ -1,16 +1,14 @@
-from pathlib import Path
+import sys
 
-from modules.yaml_experiment import YamlToExperimentConverter, do_experiment
+from scripts.run_experiment_yaml import main as run_experiment_yaml
 
 
 
-def main(yaml_path:Path) -> None:
-    experiment = YamlToExperimentConverter().convert(yaml_path)
-    do_experiment(experiment)
+def main(arguments:list[str]|None=None) -> None:
+    run_experiment_yaml(arguments)
     return
 
 
 
 if __name__ == "__main__":
-    main(Path("yaml/run/mfcc_sliding_windows_mlp_v3.yaml"))
-    print("DONE!")
+    main(sys.argv[1:])

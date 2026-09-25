@@ -1,0 +1,96 @@
+experiment_id: legacy_best_resnet_oversampled
+
+data_pipeline:
+    pipeline:
+        type: StandardDataPipeline
+
+    source_reader:
+        type: SourceReader
+        metadata_path: data/Elderly_Cough_Audio/metadata.xlsx
+        excel_sheet_name: dynamo
+        translation_path: data/Elderly_Cough_Audio/translations.json
+        source_data_parent_directory: data/Elderly_Cough_Audio/source_data
+
+    partitioner:
+        type: Partitioner
+        label_key: isInfectious
+        group_key: PatientID
+        number_of_outer_folds: 5
+        number_of_inner_folds: 5
+        random_seed: 42
+
+    example_constructor:
+        type: ExampleConstructor
+        sampling_rate: 16000
+        verbose: false
+        train_segmenter:
+            type: SlidingWindowSegmenter
+            window_size: 8000
+            stride: 4000
+            drop_last: false
+        validation_segmenter:
+            type: SlidingWindowSegmenter
+            window_size: 8000
+            stride: 4000
+            drop_last: true
+        test_segmenter:
+            type: CenteredCoughSegmenter
+            window_size: 8000
+        segment_labeler:
+            type: OverlapLabeler
+            overlap_threshold: 0.7
+            no_overlap_label: 0
+        transformer:
+            type: MFCC
+            sampling_rate: 16000
+            n_fft: 512
+            win_length: 400
+            hop_length: 160
+            n_mels: 40
+            n_mfcc: 40
+        cache_directory: outputs/cache/elderly_cough_audio_waveform_16khz_v3
+
+    oversampler:
+        type: UniformOversampler
+        random_seed: 42
+
+model:
+    type: ResNet
+    block_channels: [16, 32]
+    blocks_per_stage: 1
+    output_dim: 3
+
+training:
+    random_seed: 42
+    num_epochs: 100
+    criterion_name: cross_entropy
+    optimizer_name: adamw
+    learning_rate: 0.0001
+    weight_decay: 0.001
+    batch_size: 128
+    num_workers: 0
+    drop_last: false
+    class_weighting: none
+    early_stopping_patience: 20
+    load_best_model: true
+
+evaluation:
+    metrics:
+        - roc_auc
+        - pr_auc
+        - precision
+        - recall
+        - specificity
+        - f1_score
+        - accuracy
+        - macro_accuracy
+        - macro_f1_score
+        - macro_precision
+        - macro_recall
+    label_mapping:
+        raw_class_groups:
+            - [0, 1]
+            - [2]
+        class_names:
+            - non-infectious
+            - infectious

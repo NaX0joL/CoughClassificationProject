@@ -10,7 +10,9 @@ from .abstract import ClassificationMetric, ClassificationMetricInput
 class PRAucMetric(ClassificationMetric):
     name = "pr_auc"
 
-    def calculate(self, metric_input:ClassificationMetricInput) -> float:
+    def calculate(self, metric_input:ClassificationMetricInput) -> float|None:
+        if self._binary_labels_are_incomplete(metric_input):
+            return None
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
@@ -36,3 +38,12 @@ class PRAucMetric(ClassificationMetric):
             metric_input.probabilities,
             average="macro",
         ))
+
+    @staticmethod
+    def _binary_labels_are_incomplete(
+        metric_input:ClassificationMetricInput,
+    ) -> bool:
+        return (
+            len(metric_input.class_labels) == 2
+            and not np.isin(metric_input.class_labels, metric_input.labels).all()
+        )

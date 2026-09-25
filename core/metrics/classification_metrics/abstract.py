@@ -17,5 +17,5 @@ class ClassificationMetric(ABC):
     name:str
 
     @abstractmethod
-    def calculate(self, metric_input:ClassificationMetricInput) -> float:
+    def calculate(self, metric_input:ClassificationMetricInput) -> float|None:
         """Calculate this metric from validated classification outputs."""

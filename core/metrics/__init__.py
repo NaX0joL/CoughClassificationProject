@@ -16,6 +16,7 @@ from .classification_metrics import (
     calculate_classification_metrics,
 )
 from .evaluation import ModelEvaluation, ModelEvaluator
+from .label_mapping import BinaryInfectionLabelMapping
 from .metrics_config import MetricsConfig
 
 
@@ -35,7 +36,8 @@ __all__ = [
     "RocAucMetric",
     "SpecificityMetric",
     "MetricsConfig",
+    "BinaryInfectionLabelMapping",
     "calculate_classification_metrics",
-    "ModelEvaluator",
     "ModelEvaluation",
+    "ModelEvaluator",
 ]

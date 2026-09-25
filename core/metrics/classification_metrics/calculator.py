@@ -9,15 +9,15 @@ from .abstract import ClassificationMetric, ClassificationMetricInput
 
 @dataclass(frozen=True)
 class ClassificationMetrics:
-    values:dict[str, float]
+    values:dict[str, float|None]
 
-    def __getattr__(self, name:str) -> float:
+    def __getattr__(self, name:str) -> float|None:
         try:
             return self.values[name]
         except KeyError as error:
             raise AttributeError(f"metric was not calculated: {name}") from error
 
-    def to_dict(self) -> dict[str, float]:
+    def to_dict(self) -> dict[str, float|None]:
         return dict(self.values)
 
 

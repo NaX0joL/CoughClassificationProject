@@ -1,10 +1,13 @@
 # main ignore
 .venv/
 __pycache__/
+.pytest_cache/
 *.pyc
 outputs/
 data/
 tmp_trash/
+legacy/
+tests/
 
 # misc modules
 modules/
@@ -22,6 +25,8 @@ modules/email_notification/*
 .agents/
 AGENTS.md
 opencode.json
+graphify-out/
+.graphifyignore
 
 # additional
 AGENT.md
